@@ -23,8 +23,12 @@ defineProps({
       <h2>你的功能配置</h2>
       <div class="function-item" v-for="f in report.functions" :key="f.position">
         <div class="function-head">
-          <span class="f-position">{{ f.position }}</span>
           <span class="f-name">{{ f.function }}</span>
+          <span class="f-score">{{ f.score }}</span>
+        </div>
+        <span class="f-position">{{ f.position }}</span>
+        <div class="score-track" :title="`${f.function} 使用强度 ${f.score}`">
+          <div class="score-fill" :style="{ width: f.score + '%' }"></div>
         </div>
         <p class="f-insight">{{ f.insight }}</p>
       </div>
@@ -47,7 +51,10 @@ defineProps({
     <!-- 5. 压力下的你 + 类型配对（v2 新增） -->
     <section class="report-section">
       <h2>压力下的你</h2>
-      <p>{{ report.under_pressure }}</p>
+      <p class="pressure-label">高压之下</p>
+      <p class="pressure-text">{{ report.under_pressure[0] }}</p>
+      <p class="pressure-label">风暴过后</p>
+      <p class="pressure-text">{{ report.under_pressure[1] }}</p>
     </section>
     <section class="report-section">
       <h2>类型配对</h2>

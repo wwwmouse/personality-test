@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
@@ -12,6 +12,10 @@ const report = ref(null)
 
 // 分析失败时的错误信息（'' = 没出过错）
 const errorMessage = ref('')
+
+// 答题进度：已选题数 → 进度条百分比
+const answeredCount = computed(() => questions.filter((q) => answers.value[q.id].choice).length)
+const progressPct = computed(() => Math.round((answeredCount.value / questions.length) * 100))
 
 // 所有题的答案容器，提前初始化好，形如：
 // { q1: { choice: '', reason: '' }, q2: {...}, ... }
@@ -80,11 +84,17 @@ function handleRestart() {
   <div class="page">
     <header class="site-header">
       <h1>不止于MBTI</h1>
-      <p class="subtitle">10 道情景题 · 你的理由，会写进只属于你的报告</p>
+      <p class="subtitle">20 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
 
-    <!-- 答题阶段：用 v-for 把 10 道题依次渲染出来 -->
+    <!-- 答题阶段：用 v-for 把 20 道题依次渲染出来 -->
     <main v-if="phase === 'answering'" class="container">
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>
+        </div>
+        <span class="progress-text">{{ answeredCount }} / {{ questions.length }}</span>
+      </div>
       <QuestionItem
         v-for="(q, i) in questions"
         :key="q.id"
@@ -97,7 +107,7 @@ function handleRestart() {
 
     <!-- 分析阶段：要读 5~10 秒，给用户一个等待反馈 -->
     <main v-else-if="phase === 'analyzing'" class="container">
-      <p class="analyzing">🤔 正在解读你的十个瞬间…（约 5~10 秒）</p>
+      <p class="analyzing">🤔 正在解读你的二十个瞬间…（约 10~20 秒）</p>
     </main>
 
     <!-- 失败阶段：如实告诉用户发生了什么，并给出路 -->

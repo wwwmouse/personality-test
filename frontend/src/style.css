@@ -177,12 +177,15 @@ body {
 .type-badge {
   text-align: center;
   margin-bottom: 16px;
+  background: var(--accent-soft);
+  border-radius: 12px;
+  padding: 18px 16px;
 }
 
 .type-letters {
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 800;
-  letter-spacing: 4px;
+  letter-spacing: 6px;
   color: var(--accent);
 }
 
@@ -243,22 +246,89 @@ body {
 }
 
 .f-position {
-  font-size: 13px;
+  display: inline-block;
+  font-size: 12px;
   color: var(--text-soft);
   background: var(--accent-soft);
-  padding: 2px 8px;
+  padding: 1px 8px;
   border-radius: 6px;
+  margin-top: 2px;
 }
 
 .f-name {
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: 1px;
 }
 
-.f-insight {
-  margin: 6px 0 0;
+.f-score {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent);
+}
+
+.score-track {
+  height: 8px;
+  margin: 8px 0 6px;
+  background: #eee6da;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.score-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.6s ease;
+}
+
+.pressure-label {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+  margin: 8px 0 4px;
+}
+
+.pressure-text {
+  line-height: 1.8;
+  margin: 0 0 4px;
+}
+
+/* ===== 答题进度条（吸顶，滚动时始终可见） ===== */
+.progress-wrap {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  background: var(--bg);
+}
+
+.progress-track {
+  flex: 1;
+  height: 8px;
+  background: #e9e2d6;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 13px;
   color: var(--text-soft);
-  line-height: 1.7;
+  white-space: nowrap;
 }
 
 .disclaimer {
