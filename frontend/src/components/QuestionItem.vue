@@ -11,6 +11,7 @@ const props = defineProps({
 <template>
   <div class="question-card">
     <span class="q-number">第 {{ index }} 题</span>
+    <span v-if="question.core" class="core-badge">核心题 · 理由必填</span>
     <p class="q-text">{{ question.text }}</p>
 
     <div class="options">

@@ -34,11 +34,16 @@ function buildPayload() {
   })
 }
 
-// 点击"生成我的报告"：检查每题都选了 → 发给后端 → 展示真报告
+// 点击"生成我的报告"：检查每题都选了、核心题理由填了 → 发给后端 → 展示真报告
 async function handleSubmit() {
   const missing = questions.find((q) => !answers.value[q.id].choice)
   if (missing) {
     alert(`第 ${missing.id.slice(1)} 题还没选哦`)
+    return
+  }
+  const needReason = questions.find((q) => q.core && !answers.value[q.id].reason.trim())
+  if (needReason) {
+    alert(`第 ${needReason.id.slice(1)} 题是核心题，理由不能空——AI 要靠它读懂你`)
     return
   }
 
@@ -74,8 +79,8 @@ function handleRestart() {
 <template>
   <div class="page">
     <header class="site-header">
-      <h1>人格小测试</h1>
-      <p class="subtitle">10 道情景题 · 看看你是谁</p>
+      <h1>让 AI 看穿你</h1>
+      <p class="subtitle">10 道情景题 · 你的理由，AI 只为你写一份报告</p>
     </header>
 
     <!-- 答题阶段：用 v-for 把 10 道题依次渲染出来 -->
