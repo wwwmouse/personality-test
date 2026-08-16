@@ -81,13 +81,13 @@
 ```
 personality-test/
 ├── docs/                        ← 大脑文件（说明书、工作手册、试飞材料）
-│   ├── product-spec.md          玩法 + 10 道题 + 报告结构（阶段 0）
+│   ├── product-spec.md          玩法 + 20 道题 + 报告结构（阶段 0，题目阶段 4 扩至 20）
 │   ├── prompt.md                AI 工作手册（阶段 1）
-│   └── test-input.json          你的 10 题试飞答案（阶段 1）
+│   └── test-input.json          你的 20 题试飞答案（阶段 1 起，阶段 4 扩充）
 ├── frontend/                    ← 画面（用户看得见的部分）
 │   ├── src/App.vue              总导演：答题 → 分析中 → 报告/失败 的舞台切换
 │   ├── src/components/          QuestionItem.vue（单题）ReportView.vue（报告）
-│   ├── src/data/questions.json  10 道题（数据不是代码，想改题就改这个文件）
+│   ├── src/data/questions.json  20 道题（数据不是代码，想改题就改这个文件）
 │   └── vite.config.js           代理中转站：/api → 3001
 └── server/                      ← 掌柜（藏 key、调 AI）
     ├── server.js                /api/analyze 全部逻辑

@@ -115,7 +115,7 @@ function handleRestart() {
       <div class="error-box">
         <p class="error-title">😵 分析没成功</p>
         <p class="error-msg">{{ errorMessage }}</p>
-        <p class="error-hint">你的 10 题答案都还留着——重试，或返回改答案。</p>
+        <p class="error-hint">你的 20 题答案都还留着——重试，或返回改答案。</p>
         <div class="error-actions">
           <button class="submit-btn" @click="handleSubmit">🔄 重试一次</button>
           <button class="restart-btn" @click="phase = 'answering'">返回修改答案</button>
