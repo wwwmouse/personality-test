@@ -14,8 +14,8 @@ defineProps({
       <span class="type-name">· {{ report.type_name }}</span>
     </div>
 
-    <!-- 2. 一句话总结 + 人格描述 -->
-    <p class="summary">{{ report.summary }}</p>
+    <!-- 2. 金句 + 人格描述 -->
+    <p class="punchline">{{ report.punchline }}</p>
     <p class="description">{{ report.description }}</p>
 
     <!-- 3. 八维功能解读 -->
@@ -44,14 +44,14 @@ defineProps({
       </ul>
     </section>
 
-    <!-- 5. 人际与职业建议 -->
+    <!-- 5. 压力下的你 + 类型配对（v2 新增） -->
     <section class="report-section">
-      <h2>人际</h2>
-      <p>{{ report.relationship_advice }}</p>
+      <h2>压力下的你</h2>
+      <p>{{ report.under_pressure }}</p>
     </section>
     <section class="report-section">
-      <h2>职业</h2>
-      <p>{{ report.career_advice }}</p>
+      <h2>类型配对</h2>
+      <p>{{ report.type_matches }}</p>
     </section>
 
     <!-- 6. 免责声明 -->
