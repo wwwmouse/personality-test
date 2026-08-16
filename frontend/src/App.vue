@@ -4,7 +4,7 @@ import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
 
-// 当前阶段：answering = 答题中；analyzing = AI 分析中；result = 展示报告
+// 当前阶段：answering = 答题中；analyzing = 分析中；result = 展示报告
 const phase = ref('answering')
 
 // 真报告存放处（阶段 3 起由后端 /api/analyze 生成，不再用假数据）
@@ -43,7 +43,7 @@ async function handleSubmit() {
   }
   const needReason = questions.find((q) => q.core && !answers.value[q.id].reason.trim())
   if (needReason) {
-    alert(`第 ${needReason.id.slice(1)} 题是核心题，理由不能空——AI 要靠它读懂你`)
+    alert(`第 ${needReason.id.slice(1)} 题是核心题，理由不能空——你的理由会写进报告，别让它空着`)
     return
   }
 
@@ -79,8 +79,8 @@ function handleRestart() {
 <template>
   <div class="page">
     <header class="site-header">
-      <h1>让 AI 看穿你</h1>
-      <p class="subtitle">10 道情景题 · 你的理由，AI 只为你写一份报告</p>
+      <h1>不止于MBTI</h1>
+      <p class="subtitle">10 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
 
     <!-- 答题阶段：用 v-for 把 10 道题依次渲染出来 -->
@@ -95,9 +95,9 @@ function handleRestart() {
       <button class="submit-btn" @click="handleSubmit">生成我的报告 ✨</button>
     </main>
 
-    <!-- 分析阶段：AI 要读 5~10 秒，给用户一个等待反馈 -->
+    <!-- 分析阶段：要读 5~10 秒，给用户一个等待反馈 -->
     <main v-else-if="phase === 'analyzing'" class="container">
-      <p class="analyzing">🤔 AI 正在阅读你的答案…（约 5~10 秒）</p>
+      <p class="analyzing">🤔 正在解读你的十个瞬间…（约 5~10 秒）</p>
     </main>
 
     <!-- 失败阶段：如实告诉用户发生了什么，并给出路 -->
