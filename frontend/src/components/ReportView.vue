@@ -44,8 +44,9 @@ const totalScore = computed(() => {
   return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
 })
 
-// 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录
-const feedbackState = ref('')
+// 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录。
+// 初始化时从本地戳恢复：一份报告一生只能点一次，刷新页面也不会复活按钮
+const feedbackState = ref(localStorage.getItem('feedback-done') || '')
 const feedbackLoading = ref(false)
 
 async function sendFeedback(agree) {
@@ -59,6 +60,11 @@ async function sendFeedback(agree) {
     })
     if (!res.ok) throw new Error()
     feedbackState.value = agree ? 'like' : 'dislike'
+    try {
+      localStorage.setItem('feedback-done', feedbackState.value)
+    } catch {
+      // 盖不了戳就算了：最坏情况是刷新后能再点一次，数据诚实度优先但不强求
+    }
   } catch {
     // 记录失败：不打扰用户（按钮悄悄回来，可以再点），错误只留在服务器日志
     console.error('反馈记录失败')
