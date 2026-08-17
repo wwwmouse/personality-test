@@ -57,13 +57,35 @@ const saving = ref(false)
 // 复制分享文案：类型 + 金句 + 网址，一条消息直接甩给朋友
 async function copyShare() {
   const text = `我的MBTI测试结果：${props.report.personality_type}「${props.report.type_name}」\n${props.report.punchline}\n来测测你的：sherrymouse.top`
-  try {
-    await navigator.clipboard.writeText(text)
+  const done = () => {
     shareTip.value = '已复制，去发给朋友吧'
-  } catch {
-    shareTip.value = '复制失败，请手动复制'
+    setTimeout(() => (shareTip.value = ''), 3000)
   }
-  setTimeout(() => (shareTip.value = ''), 3000)
+  // 现代剪贴板 API：桌面浏览器和 https 下可用
+  try {
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(text)
+      done()
+      return
+    }
+  } catch {
+    // 落到老办法
+  }
+  // 老式 API 兜底：微信/QQ 内置浏览器禁用现代剪贴板 API，但认这一招
+  const ta = document.createElement('textarea')
+  ta.value = text
+  ta.style.position = 'fixed'
+  ta.style.opacity = '0'
+  document.body.appendChild(ta)
+  ta.select()
+  try {
+    document.execCommand('copy')
+    done()
+  } catch {
+    shareTip.value = '复制失败，请长按选择文字复制'
+    setTimeout(() => (shareTip.value = ''), 3000)
+  }
+  document.body.removeChild(ta)
 }
 
 // 保存报告截图：点按钮时才加载 html2canvas（平时不背这个库的包袱）

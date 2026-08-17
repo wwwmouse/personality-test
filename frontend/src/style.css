@@ -848,6 +848,26 @@ body {
   text-align: center;
 }
 
+/* ============ og-maker 工具页 ============ */
+.og-maker-note {
+  max-width: 520px;
+  margin: 80px auto;
+  padding: 24px;
+  text-align: center;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+.og-maker-note code {
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 1px 8px;
+  border-radius: 6px;
+}
+
 /* ============ 封面 ============ */
 .cover {
   position: relative;
