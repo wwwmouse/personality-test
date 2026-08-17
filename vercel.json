@@ -3,6 +3,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/analyze"
+    },
+    {
+      "source": "/stats",
+      "destination": "/index.html"
     }
   ],
   "functions": {

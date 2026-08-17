@@ -23,7 +23,8 @@ async function sendFeedback(agree) {
     if (!res.ok) throw new Error()
     feedbackState.value = agree ? 'like' : 'dislike'
   } catch {
-    feedbackState.value = 'error'
+    // 记录失败：不打扰用户（按钮悄悄回来，可以再点），错误只留在服务器日志
+    console.error('反馈记录失败')
   } finally {
     feedbackLoading.value = false
   }
@@ -95,7 +96,6 @@ async function sendFeedback(agree) {
         <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(true)">满意 ^^</button>
         <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(false)">不满意 QAQ</button>
       </template>
-      <p v-else-if="feedbackState === 'error'" class="feedback-done">记录失败了，没关系，不影响你的报告</p>
       <p v-else class="feedback-done">已记录，谢谢反馈</p>
     </section>
   </div>

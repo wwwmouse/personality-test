@@ -6,7 +6,7 @@
 // 将来想换 Redis 等别的仓库，只改这一个文件。
 import fs from 'node:fs'
 import path from 'node:path'
-import { put, list } from '@vercel/blob'
+import { put, list, get } from '@vercel/blob'
 
 const BLOB_PATH = 'stats.json' // 云端账本的文件名
 const LOCAL_FILE = path.join(import.meta.dirname, '.stats-local.json') // 本地账本
@@ -38,11 +38,12 @@ function storageMode() {
 // 练手流量下可以忽略；将来流量大了换 Redis（INCR 天然原子）——那时也只改这一个文件。
 async function readStats() {
   if (storageMode() === 'blob') {
-    // 账本存在公开 URL 上（内容只是聚合数字，无个人信息），URL 不可猜
+    // 仓库是私密的：list 用 SDK 鉴权没问题，但"拿到网址直接 fetch"行不通
+    // （私密文件的网址不带通行证打不开）。读文件要用 SDK 的 get()，它自带通行证。
     const { blobs } = await list({ prefix: BLOB_PATH })
     if (blobs.length === 0) return structuredClone(EMPTY)
-    const res = await fetch(blobs[0].url)
-    return await res.json()
+    const res = await get(BLOB_PATH, { access: 'private' })
+    return JSON.parse(await new Response(res.stream).text())
   }
   if (!fs.existsSync(LOCAL_FILE)) return structuredClone(EMPTY)
   return JSON.parse(fs.readFileSync(LOCAL_FILE, 'utf8'))
@@ -51,9 +52,9 @@ async function readStats() {
 async function writeStats(stats) {
   if (storageMode() === 'blob') {
     await put(BLOB_PATH, JSON.stringify(stats, null, 2), {
-      access: 'public',
+      access: 'private',        // 仓库是私密的：账本只有带通行证的后端自己能碰
       contentType: 'application/json',
-      allowOverwrite: true, // 覆盖写：账本始终只有一个，路径固定
+      allowOverwrite: true,     // 覆盖写：账本始终只有一个，路径固定
     })
     return
   }
