@@ -4,12 +4,34 @@ import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
 import StatsView from './components/StatsView.vue'
+import OrbsBackground from './components/OrbsBackground.vue'
 
-// 当前阶段：answering = 答题中；analyzing = 分析中；result = 展示报告
-const phase = ref('answering')
+// 当前阶段：cover = 封面；answering = 答题中；analyzing = 分析中；result = 展示报告
+const phase = ref('cover')
 
 // 统计页捷径：访问 /stats 时走统计页，其余路径都走答题流程
 const isStatsPage = window.location.pathname === '/stats'
+
+// 全局背景浮标速度：封面慢速漂浮；进入答题/分析/报告后加速
+const orbSpeed = computed(() => (phase.value === 'cover' ? 'slow' : 'fast'))
+
+// 结果页高亮：只有报告判定的阳面四功能闪烁，其余浮标安静（表现"你的四大功能"）
+const orbHighlight = computed(() =>
+  phase.value === 'result' && report.value ? report.value.functions.map((f) => f.function) : null
+)
+
+// 报告回看：上次的完整报告存在浏览器本地（localStorage），封面给"查看上次报告"入口
+// 这样看完报告关掉页面，也不用重新答一遍题
+const hasSavedReport = ref(localStorage.getItem('last-report') !== null)
+
+function viewSavedReport() {
+  try {
+    report.value = JSON.parse(localStorage.getItem('last-report'))
+    phase.value = 'result'
+  } catch {
+    hasSavedReport.value = false
+  }
+}
 
 // 真报告存放处（阶段 3 起由后端 /api/analyze 生成，不再用假数据）
 const report = ref(null)
@@ -66,6 +88,11 @@ async function handleSubmit() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
     report.value = data
+    try {
+      localStorage.setItem('last-report', JSON.stringify(data))
+    } catch {
+      // 浏览器不让存（隐私模式等）：不影响看报告，只影响下次回看
+    }
     phase.value = 'result'
   } catch (err) {
     // 失败：进入专门的失败页，答案都保留着，用户可重试或返回修改
@@ -86,7 +113,9 @@ function handleRestart() {
 
 <template>
   <div class="page">
-    <header class="site-header">
+    <!-- 全局背景：八维浮标（封面慢速全闪，答题/报告加速全闪，结果页只闪阳面四功能） -->
+    <OrbsBackground :speed="orbSpeed" :highlight="orbHighlight" />
+    <header v-if="phase !== 'cover'" class="site-header">
       <h1>不止于MBTI</h1>
       <p class="subtitle">20 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
@@ -94,6 +123,28 @@ function handleRestart() {
     <!-- 统计页：/stats 专属（口令门在 StatsView 里） -->
     <main v-if="isStatsPage" class="container">
       <StatsView />
+    </main>
+
+    <!-- 封面：第一印象页，别一进门就是题目 -->
+    <main v-else-if="phase === 'cover'" class="container">
+      <div class="cover">
+        <div class="cover-inner">
+          <p class="cover-badge">MBTI人格测试</p>
+          <h1 class="cover-title">不止于MBTI</h1>
+          <p class="cover-tagline">你比认识中的自己更……</p>
+          <p class="cover-intro">
+            MBTI 诞生于荣格的心理类型理论，它把人的内心活动拆成八种认知功能——思维、情感、感觉、直觉，各自又有向内与向外的方向。这八种功能人人都有，只是使用频率和顺序不同：排在前面的，是你与世界打交道时最顺手的工具；排在后面的，是藏在压力与成长里的课题。通过 20 道情境题，本测验会尝试还原你的功能排序，并告诉你：你习惯怎样思考、为什么会被某些场景触动、压力来临时你本能地做什么。它不是给人贴标签，而是一面镜子——照出那些"我说不清为什么，但我就是这样"的部分。认识功能，是为了更好地与自己相处，也更好地理解身边那些与你不同的人。
+          </p>
+          <ol class="cover-tips">
+            <li>每道题目后都附带理由框，诚恳希望您畅所欲言——您的动机能有效提高最终报告的质量</li>
+            <li>本测验旨在为使用者提供认识自己的方式，不附带任何明确建议与判断</li>
+            <li>如果再难相遇，祝您早安，午安，晚安^^</li>
+          </ol>
+          <p class="cover-meta">20 道情景题 · 约 6 分钟</p>
+          <button class="cover-start" @click="phase = 'answering'">开始测试</button>
+          <button v-if="hasSavedReport" class="restart-btn cover-replay" @click="viewSavedReport">查看上次报告</button>
+        </div>
+      </div>
     </main>
 
     <!-- 答题阶段：用 v-for 把 20 道题依次渲染出来 -->
