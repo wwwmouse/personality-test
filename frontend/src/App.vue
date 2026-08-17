@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
@@ -19,6 +19,28 @@ const orbSpeed = computed(() => (phase.value === 'cover' ? 'slow' : 'fast'))
 const orbHighlight = computed(() =>
   phase.value === 'result' && report.value ? report.value.functions.map((f) => f.function) : null
 )
+
+// 分析中的等待文案轮播：每 4 秒换一句，让 10~20 秒的等待不无聊。
+// 魔法盒子原则：只写用户体验，不泄露内部流程（不出现"调 API"之类）
+const analyzingLines = [
+  '正在读你的二十个瞬间…',
+  '正在把你的理由折成纸飞机…',
+  '正在描摹你的功能图谱…',
+  '正在给报告盖上最后一枚印章…',
+]
+const analyzingText = ref(analyzingLines[0])
+let analyzingTimer = null
+
+watch(phase, (p) => {
+  clearInterval(analyzingTimer)
+  if (p === 'analyzing') {
+    analyzingText.value = analyzingLines[0]
+    analyzingTimer = setInterval(() => {
+      const next = (analyzingLines.indexOf(analyzingText.value) + 1) % analyzingLines.length
+      analyzingText.value = analyzingLines[next]
+    }, 4000)
+  }
+})
 
 // 报告回看：上次的完整报告存在浏览器本地（localStorage），封面给"查看上次报告"入口
 // 这样看完报告关掉页面，也不用重新答一遍题
@@ -165,9 +187,12 @@ function handleRestart() {
       <button class="submit-btn" @click="handleSubmit">生成我的报告 ✨</button>
     </main>
 
-    <!-- 分析阶段：要读 5~10 秒，给用户一个等待反馈 -->
+    <!-- 分析阶段：10~20 秒的等待，用轮播文案 + 跳动的小点陪着用户 -->
     <main v-else-if="phase === 'analyzing'" class="container">
-      <p class="analyzing">🤔 正在解读你的二十个瞬间…（约 10~20 秒）</p>
+      <div class="analyzing">
+        <p class="analyzing-text" :key="analyzingText">{{ analyzingText }}</p>
+        <p class="analyzing-dots"><span>·</span><span>·</span><span>·</span></p>
+      </div>
     </main>
 
     <!-- 失败阶段：如实告诉用户发生了什么，并给出路 -->

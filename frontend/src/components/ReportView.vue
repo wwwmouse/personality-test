@@ -152,10 +152,11 @@ async function sendFeedback(agree) {
     <section class="feedback-box">
       <p class="feedback-title">对报告满意吗？</p>
       <template v-if="!feedbackState">
-        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(true)">满意 ^^</button>
-        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(false)">不满意 QAQ</button>
+        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(true)">满意</button>
+        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(false)">不满意</button>
       </template>
-      <p v-else class="feedback-done">已记录，谢谢反馈</p>
+      <p v-else-if="feedbackState === 'like'" class="feedback-done">谢谢喵^^</p>
+      <p v-else class="feedback-done">对不起喵……QAQ</p>
     </section>
   </div>
 </template>

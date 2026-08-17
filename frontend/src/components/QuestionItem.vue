@@ -26,11 +26,12 @@ const props = defineProps({
       </label>
     </div>
 
-    <input
+    <!-- textarea 两行：钩子占位文案再长也能完整换行显示，手机端不被裁切 -->
+    <textarea
       class="reason-input"
       v-model="answer.reason"
-      type="text"
+      rows="2"
       :placeholder="question.reason_prompt"
-    />
+    ></textarea>
   </div>
 </template>

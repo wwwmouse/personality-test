@@ -17,6 +17,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background: var(--bg);
+  font-size: 17px; /* 全局基准字号：暗色背景下小字更费眼，整体放大 */
 }
 
 /* ============ 全局背景浮标层（八维符号漂移 + 拖尾） ============ */
@@ -34,7 +35,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.5px;
   /* 纯文字漂浮：无边框无包裹，霓虹感靠文字光晕 */
-  text-shadow: 0 0 12px currentColor;
+  text-shadow: 0 0 9px currentColor;
   /* 两组动画：漂移（轨迹由 variant 决定、时长由 speed 决定）+ 闪烁 */
   animation: var(--drift, drift-a) var(--dur, 12s) ease-in-out infinite,
     orb-blink 2.6s ease-in-out infinite;
@@ -42,8 +43,8 @@ body {
 }
 
 @keyframes orb-blink {
-  0%, 100% { opacity: 0.15; }
-  50% { opacity: 0.65; }
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.45; }
 }
 
 /* 四套漂移轨迹，错开节奏 */
@@ -64,18 +65,40 @@ body {
 .orbs-fast .orb-v2 { --dur: 6.5s; }
 .orbs-fast .orb-v3 { --dur: 7.5s; }
 
-/* 高亮模式（结果页）：只有目标阳面功能闪烁，其余只漂移、安静变暗 */
+/* 高亮模式（结果页）：只渲染阳面四功能（阴面已从数据里移除）。
+   放大 + 按位置四档常亮（英雄最亮 → 阿尼玛最暗），不闪烁 */
 .orbs-highlight .orb {
-  opacity: 0.12;
+  font-size: 24px;
+  letter-spacing: 1px;
   animation: var(--drift, drift-a) var(--dur, 12s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
 }
 
-.orbs-highlight .orb.orb-glow {
-  animation: var(--drift, drift-a) var(--dur, 12s) ease-in-out infinite,
-    orb-blink 2.2s ease-in-out infinite;
-  animation-delay: var(--delay, 0s), var(--blink-delay, 0s);
+.orbs-highlight .orb-r0 {
+  opacity: 0.85;
+  text-shadow: 0 0 24px currentColor, 0 0 10px currentColor;
 }
+
+.orbs-highlight .orb-r1 {
+  opacity: 0.62;
+  text-shadow: 0 0 18px currentColor;
+}
+
+.orbs-highlight .orb-r2 {
+  opacity: 0.42;
+  text-shadow: 0 0 12px currentColor;
+}
+
+.orbs-highlight .orb-r3 {
+  opacity: 0.24;
+  text-shadow: 0 0 8px currentColor;
+}
+
+/* 高亮模式下漂移放慢：不抢报告的阅读注意力 */
+.orbs-highlight .orb-v0 { --dur: 14s; }
+.orbs-highlight .orb-v1 { --dur: 17s; }
+.orbs-highlight .orb-v2 { --dur: 20s; }
+.orbs-highlight .orb-v3 { --dur: 23s; }
 
 @keyframes drift-a {
   0%, 100% { transform: translate(0, 0); }
@@ -155,7 +178,7 @@ body {
 }
 
 .q-text {
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0 0 14px;
   line-height: 1.6;
@@ -195,6 +218,7 @@ body {
 }
 
 .option-text {
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -206,10 +230,13 @@ body {
   padding: 10px 12px;
   border: 1px dashed var(--border);
   border-radius: 10px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
+  line-height: 1.6;
   color: var(--text);
   background: #1b1b29;
+  resize: vertical; /* 两行起步，用户可以往下拖 */
+  min-height: 3.4em;
 }
 
 .reason-input:focus {
@@ -337,12 +364,13 @@ body {
 
 .punchline {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.7;
   margin: 0 0 12px;
 }
 
 .description {
+  font-size: 16px;
   line-height: 1.8;
   color: #cfd4e0;
   margin: 0 0 8px;
@@ -491,14 +519,48 @@ body {
 .analyzing {
   text-align: center;
   padding: 80px 20px;
-  font-size: 1.2rem;
-  color: var(--text-soft);
-  animation: pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+/* 轮播文案：换句时淡入 */
+.analyzing-text {
+  font-size: 1.25rem;
+  color: var(--text-soft);
+  margin: 0 0 14px;
+  animation: fade-up 0.5s ease;
+}
+
+/* 三个弹跳的小点：让等待有呼吸感 */
+.analyzing-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.analyzing-dots span {
+  font-size: 1.7rem;
+  line-height: 1;
+  color: var(--accent);
+  animation: dot-bounce 1.2s ease-in-out infinite;
+}
+
+.analyzing-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.analyzing-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dot-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
 }
 
 .error-box {
@@ -542,7 +604,7 @@ body {
   padding-top: 12px;
   border-top: 1px solid var(--border);
   color: #6f7488;
-  font-size: 13px;
+  font-size: 14px;
   text-align: center;
 }
 
@@ -771,7 +833,7 @@ body {
   max-width: 560px;
   margin: 0 auto 18px;
   text-align: left;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.9;
   color: var(--text-soft);
 }
@@ -781,7 +843,7 @@ body {
   margin: 0 auto 32px;
   padding: 14px 18px 14px 36px;
   text-align: left;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.9;
   color: var(--text-soft);
   background: var(--accent-soft);
