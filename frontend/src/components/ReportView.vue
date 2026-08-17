@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 
 // 报告展示组件：把报告 JSON 渲染成页面
 // 报告结构见 docs/product-spec.md 第 4 节
@@ -49,6 +49,51 @@ const totalScore = computed(() => {
 const feedbackState = ref(localStorage.getItem('feedback-done') || '')
 const feedbackLoading = ref(false)
 
+// 报告 DOM 引用（截图用）
+const reportEl = ref(null)
+const shareTip = ref('')
+const saving = ref(false)
+
+// 复制分享文案：类型 + 金句 + 网址，一条消息直接甩给朋友
+async function copyShare() {
+  const text = `我的MBTI测试结果：${props.report.personality_type}「${props.report.type_name}」\n${props.report.punchline}\n来测测你的：sherrymouse.top`
+  try {
+    await navigator.clipboard.writeText(text)
+    shareTip.value = '已复制，去发给朋友吧'
+  } catch {
+    shareTip.value = '复制失败，请手动复制'
+  }
+  setTimeout(() => (shareTip.value = ''), 3000)
+}
+
+// 保存报告截图：点按钮时才加载 html2canvas（平时不背这个库的包袱）
+async function saveScreenshot() {
+  if (saving.value) return
+  saving.value = true
+  shareTip.value = '正在生成截图…'
+  try {
+    const { default: html2canvas } = await import('html2canvas')
+    // 截图模式：关动画、渐变文字改纯色（html2canvas 对 background-clip 文字支持差）
+    document.documentElement.classList.add('screenshot-mode')
+    await nextTick()
+    const canvas = await html2canvas(reportEl.value, {
+      backgroundColor: '#0b0b12',
+      scale: 2,
+    })
+    const link = document.createElement('a')
+    link.download = `我的MBTI报告-${props.report.personality_type}.png`
+    link.href = canvas.toDataURL('image/png')
+    link.click()
+    shareTip.value = '截图已保存'
+  } catch (err) {
+    console.error('截图失败：', err)
+    shareTip.value = '截图失败，长按页面手动截屏也行'
+  } finally {
+    document.documentElement.classList.remove('screenshot-mode')
+    saving.value = false
+  }
+}
+
 async function sendFeedback(agree) {
   if (feedbackState.value || feedbackLoading.value) return
   feedbackLoading.value = true
@@ -75,7 +120,7 @@ async function sendFeedback(agree) {
 </script>
 
 <template>
-  <div class="report">
+  <div class="report" ref="reportEl">
     <!-- 1. 四字母 + 别称 -->
     <div class="type-badge">
       <span class="type-letters">{{ report.personality_type }}</span>
@@ -153,6 +198,16 @@ async function sendFeedback(agree) {
 
     <!-- 6. 免责声明 -->
     <p class="disclaimer">{{ report.disclaimer }}</p>
+
+    <!-- 6.5 分享：复制文案 + 保存截图（拉朋友来的传播闭环） -->
+    <section class="share-box">
+      <p class="share-title">把报告分享给朋友</p>
+      <div class="share-btns">
+        <button class="share-btn" @click="copyShare">📋 复制分享文案</button>
+        <button class="share-btn" :disabled="saving" @click="saveScreenshot">📸 保存报告截图</button>
+      </div>
+      <p v-if="shareTip" class="share-tip">{{ shareTip }}</p>
+    </section>
 
     <!-- 7. 反馈：只记一个数字，不记任何个人内容 -->
     <section class="feedback-box">
