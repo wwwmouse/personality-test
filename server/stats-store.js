@@ -20,12 +20,16 @@ const EMPTY = {
   feedback: { like: 0, dislike: 0 },
 }
 
-// 决定账本放哪：有 Blob 令牌 → 云端；本地开发没令牌 → 本地文件；
-// 在 Vercel 上却没令牌 = 配置遗漏，宁可报错也不悄悄写"失忆文件"
+// 决定账本放哪：
+//   - 有 Blob 令牌（BLOB_READ_WRITE_TOKEN）或 Blob 身份牌（BLOB_STORE_ID）→ 云端。
+//     新版 Vercel Blob 在函数里用 OIDC 自动认证：运行时发短效令牌，SDK 自己接住，
+//     所以云端只需要 BLOB_STORE_ID，不需要手抄长令牌
+//   - 本地开发两者都没有 → 本地文件
+//   - 在 Vercel 上却两者都没有 = 配置遗漏，宁可报错也不悄悄写"失忆文件"
 function storageMode() {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return 'blob'
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return 'blob'
   if (process.env.VERCEL) {
-    throw new Error('部署在 Vercel 但没配 BLOB_READ_WRITE_TOKEN：去项目后台 Storage 里创建 Blob 存储')
+    throw new Error('部署在 Vercel 但没配 Blob 存储：去项目后台 Storage 里创建并连接到本项目')
   }
   return 'local'
 }
