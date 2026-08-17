@@ -5,16 +5,12 @@ import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
 import StatsView from './components/StatsView.vue'
 import OrbsBackground from './components/OrbsBackground.vue'
-import OgMaker from './components/OgMaker.vue'
 
 // 当前阶段：cover = 封面；answering = 答题中；analyzing = 分析中；result = 展示报告
 const phase = ref('cover')
 
 // 统计页捷径：访问 /stats 时走统计页，其余路径都走答题流程
 const isStatsPage = window.location.pathname === '/stats'
-
-// 社交卡片图生成器（一次性工具页）：访问 /og-maker 自动画图下载
-const isOgMaker = window.location.pathname === '/og-maker'
 
 // 全局背景浮标速度：封面慢速漂浮；进入答题/分析/报告后加速
 const orbSpeed = computed(() => (phase.value === 'cover' ? 'slow' : 'fast'))
@@ -27,10 +23,10 @@ const orbHighlight = computed(() =>
 // 分析中的等待文案轮播：每 4 秒换一句，让 10~20 秒的等待不无聊。
 // 魔法盒子原则：只写用户体验，不泄露内部流程（不出现"调 API"之类）
 const analyzingLines = [
-  '正在读你的二十个瞬间…',
-  '正在把你的理由折成纸飞机…',
-  '正在描摹你的功能图谱…',
-  '正在给报告盖上最后一枚印章…',
+  '小猫正在读你的二十个瞬间…',
+  '小猫正在把你的理由折成纸飞机…',
+  '小猫正在描摹你的功能图谱…',
+  '小猫正在给报告盖上最后一枚印章…',
 ]
 const analyzingText = ref(analyzingLines[0])
 let analyzingTimer = null
@@ -143,18 +139,13 @@ function handleRestart() {
   <div class="page">
     <!-- 全局背景：八维浮标（封面慢速全闪，答题/报告加速全闪，结果页只闪阳面四功能） -->
     <OrbsBackground :speed="orbSpeed" :highlight="orbHighlight" />
-    <header v-if="phase !== 'cover' && !isOgMaker" class="site-header">
+    <header v-if="phase !== 'cover'" class="site-header">
       <h1>不止于MBTI</h1>
       <p class="subtitle">20 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
 
-    <!-- 社交卡片图生成器：/og-maker 一次性工具页 -->
-    <main v-if="isOgMaker" class="container">
-      <OgMaker />
-    </main>
-
     <!-- 统计页：/stats 专属（口令门在 StatsView 里） -->
-    <main v-else-if="isStatsPage" class="container">
+    <main v-if="isStatsPage" class="container">
       <StatsView />
     </main>
 
