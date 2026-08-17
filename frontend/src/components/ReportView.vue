@@ -1,9 +1,33 @@
 <script setup>
+import { ref } from 'vue'
+
 // 报告展示组件：把报告 JSON 渲染成页面
 // 报告结构见 docs/product-spec.md 第 4 节
-defineProps({
+const props = defineProps({
   report: { type: Object, required: true },
 })
+
+// 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录；'error' = 记录失败
+const feedbackState = ref('')
+const feedbackLoading = ref(false)
+
+async function sendFeedback(agree) {
+  if (feedbackState.value || feedbackLoading.value) return
+  feedbackLoading.value = true
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: props.report.personality_type, agree }),
+    })
+    if (!res.ok) throw new Error()
+    feedbackState.value = agree ? 'like' : 'dislike'
+  } catch {
+    feedbackState.value = 'error'
+  } finally {
+    feedbackLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -63,5 +87,16 @@ defineProps({
 
     <!-- 6. 免责声明 -->
     <p class="disclaimer">{{ report.disclaimer }}</p>
+
+    <!-- 7. 反馈：只记一个数字，不记任何个人内容 -->
+    <section class="feedback-box">
+      <p class="feedback-title">对报告满意吗？</p>
+      <template v-if="!feedbackState">
+        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(true)">满意 ^^</button>
+        <button class="feedback-btn" :disabled="feedbackLoading" @click="sendFeedback(false)">不满意 QAQ</button>
+      </template>
+      <p v-else-if="feedbackState === 'error'" class="feedback-done">记录失败了，没关系，不影响你的报告</p>
+      <p v-else class="feedback-done">已记录，谢谢反馈</p>
+    </section>
   </div>
 </template>

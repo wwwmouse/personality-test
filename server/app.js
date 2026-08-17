@@ -8,6 +8,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
+import { readStats, writeStats } from './stats-store.js'
 
 const app = express()
 
@@ -131,10 +132,62 @@ app.post('/api/analyze', async (req, res) => {
     }
 
     if (!report) return res.status(502).json({ error: 'AI 连续 3 次输出不符合格式要求，请稍后重试' })
+
+    // 埋点记账：只记成功出报告的测试，只记数字（次数/类型/理由填写情况）。
+    // 记账失败绝不能拦着报告——用户没做错任何事，悄悄记日志即可。
+    try {
+      const filled = answers.filter((a) => a.reason && a.reason.trim()).length
+      const stats = await readStats()
+      stats.totalTests += 1
+      stats.types[report.personality_type] = (stats.types[report.personality_type] || 0) + 1
+      stats.reasonFilled += filled
+      stats.reasonTotal += answers.length
+      await writeStats(stats)
+    } catch (err) {
+      console.error('统计记账失败：', err.message)
+    }
+
     res.json(report)
   } catch (err) {
     // 兜底：网络断、超时等，都落到这里
     res.status(500).json({ error: `分析失败：${err.message}` })
+  }
+})
+
+// 反馈接口：报告页"对报告满意吗？"按钮。只记一个数字，不记任何个人内容
+app.post('/api/feedback', async (req, res) => {
+  const { type, agree } = req.body || {}
+  if (typeof type !== 'string' || type.length === 0 || typeof agree !== 'boolean') {
+    return res.status(400).json({ error: '反馈格式不对' })
+  }
+  try {
+    const stats = await readStats()
+    if (agree) stats.feedback.like += 1
+    else stats.feedback.dislike += 1
+    await writeStats(stats)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('反馈记账失败：', err.message)
+    res.status(500).json({ error: '反馈记录失败' })
+  }
+})
+
+// 统计接口：/stats 页面专用。都是聚合数字，但只有知道口令的人能看
+app.get('/api/stats', async (req, res) => {
+  if (!process.env.STATS_KEY) {
+    return res.status(503).json({ error: '后台没配置统计口令（STATS_KEY）' })
+  }
+  if (req.query.key !== process.env.STATS_KEY) {
+    return res.status(403).json({ error: '口令不对' })
+  }
+  try {
+    const stats = await readStats()
+    res.json({
+      ...stats,
+      fillRate: stats.reasonTotal ? Math.round((stats.reasonFilled / stats.reasonTotal) * 100) : 0,
+    })
+  } catch (err) {
+    res.status(502).json({ error: `读取账本失败：${err.message}` })
   }
 })
 

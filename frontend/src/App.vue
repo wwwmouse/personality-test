@@ -3,9 +3,13 @@ import { ref, computed } from 'vue'
 import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
+import StatsView from './components/StatsView.vue'
 
 // 当前阶段：answering = 答题中；analyzing = 分析中；result = 展示报告
 const phase = ref('answering')
+
+// 统计页捷径：访问 /stats 时走统计页，其余路径都走答题流程
+const isStatsPage = window.location.pathname === '/stats'
 
 // 真报告存放处（阶段 3 起由后端 /api/analyze 生成，不再用假数据）
 const report = ref(null)
@@ -87,8 +91,13 @@ function handleRestart() {
       <p class="subtitle">20 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
 
+    <!-- 统计页：/stats 专属（口令门在 StatsView 里） -->
+    <main v-if="isStatsPage" class="container">
+      <StatsView />
+    </main>
+
     <!-- 答题阶段：用 v-for 把 20 道题依次渲染出来 -->
-    <main v-if="phase === 'answering'" class="container">
+    <main v-else-if="phase === 'answering'" class="container">
       <div class="progress-wrap">
         <div class="progress-track">
           <div class="progress-fill" :style="{ width: progressPct + '%' }"></div>

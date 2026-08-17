@@ -9,6 +9,7 @@
     "test:analyze": "node test-analyze.js"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "@vercel/blob": "^2.3.0"
   }
 }

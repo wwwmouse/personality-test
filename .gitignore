@@ -4,3 +4,6 @@ dist/
 
 # 环境变量文件（装着 API key，绝不上传 git）
 .env
+
+# 本地开发用的统计账本（生产用 Vercel Blob，不存在本地）
+.stats-local.json
