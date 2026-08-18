@@ -1,6 +1,6 @@
 // test-analyze.js —— 不经过前端，直接测后端的"试飞员"脚本
 // 用法：终端 1 跑 npm run dev 启动后端；终端 2 跑 node test-analyze.js
-// 作用：把 docs/test-input.json 的 10 题答案发给 /api/analyze，打印 AI 报告
+// 作用：把 docs/test-input.json 的 20 题答案发给 /api/analyze，打印 AI 报告
 
 import fs from 'node:fs'
 
