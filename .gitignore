@@ -5,5 +5,7 @@ dist/
 # 环境变量文件（装着 API key，绝不上传 git）
 .env
 
-# 本地开发用的统计账本（生产用 Vercel Blob，不存在本地）
+# 本地开发用的统计账本（生产用 Upstash Redis，不存在本地）
+# .stats-local.json 是旧 Blob 时代的遗留，.stats-events/ 是现在的本地票据目录
 .stats-local.json
+.stats-events/

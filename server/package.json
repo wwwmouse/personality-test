@@ -9,7 +9,8 @@
     "test:analyze": "node test-analyze.js"
   },
   "dependencies": {
-    "express": "^5.2.1",
-    "@vercel/blob": "^2.3.0"
+    "@upstash/redis": "^1.38.2",
+    "@vercel/blob": "^2.3.0",
+    "express": "^5.2.1"
   }
 }

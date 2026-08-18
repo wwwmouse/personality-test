@@ -8,7 +8,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
-import { readStats, writeStats } from './stats-store.js'
+import { readStats, recordTest, recordFeedback } from './stats-store.js'
 
 const app = express()
 
@@ -137,12 +137,7 @@ app.post('/api/analyze', async (req, res) => {
     // 记账失败绝不能拦着报告——用户没做错任何事，悄悄记日志即可。
     try {
       const filled = answers.filter((a) => a.reason && a.reason.trim()).length
-      const stats = await readStats()
-      stats.totalTests += 1
-      stats.types[report.personality_type] = (stats.types[report.personality_type] || 0) + 1
-      stats.reasonFilled += filled
-      stats.reasonTotal += answers.length
-      await writeStats(stats)
+      await recordTest({ type: report.personality_type, filled, total: answers.length })
     } catch (err) {
       console.error('统计记账失败：', err.message)
     }
@@ -161,10 +156,7 @@ app.post('/api/feedback', async (req, res) => {
     return res.status(400).json({ error: '反馈格式不对' })
   }
   try {
-    const stats = await readStats()
-    if (agree) stats.feedback.like += 1
-    else stats.feedback.dislike += 1
-    await writeStats(stats)
+    await recordFeedback({ agree })
     res.json({ ok: true })
   } catch (err) {
     console.error('反馈记账失败：', err.message)
