@@ -8,7 +8,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
-import { readStats, recordTest, recordFeedback } from './stats-store.js'
+import { readStats, readEvents, recordTest, recordFeedback } from './stats-store.js'
 
 const app = express()
 
@@ -174,9 +174,11 @@ app.get('/api/stats', async (req, res) => {
   }
   try {
     const stats = await readStats()
+    const events = await readEvents(50)
     res.json({
       ...stats,
       fillRate: stats.reasonTotal ? Math.round((stats.reasonFilled / stats.reasonTotal) * 100) : 0,
+      events, // 明细流水：最近 50 张票，最新在前
     })
   } catch (err) {
     res.status(502).json({ error: `读取账本失败：${err.message}` })

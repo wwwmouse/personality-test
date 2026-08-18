@@ -155,6 +155,21 @@ async function readStats() {
   return stats
 }
 
+// 读明细流水：最近 limit 张票，最新在前（统计页"实时记录"用）。
+// 票据就是流水——每笔测试/反馈都存了一张票，这里只是把票翻出来给人看。
+async function readEvents(limit = 50) {
+  if (storageMode() === 'redis') {
+    const redis = getRedis()
+    // LRANGE -limit -1 取列表最后 limit 条（旧→新），再倒过来让最新在前
+    const raw = await redis.lrange(KEYS.events, -limit, -1)
+    return raw.reverse().map((s) => JSON.parse(s))
+  }
+  return readLocalTickets()
+    .sort((a, b) => a.ts - b.ts)
+    .slice(-limit)
+    .reverse()
+}
+
 // 清零：统计期重启用（reset-stats.js 脚本调用）。
 // 旧 Blob 时代的 .stats-local.json 不再读取——本地账随票据制重新开始，旧文件只是历史遗留。
 async function resetStats() {
@@ -166,4 +181,4 @@ async function resetStats() {
   if (fs.existsSync(LOCAL_DIR)) fs.rmSync(LOCAL_DIR, { recursive: true, force: true })
 }
 
-export { readStats, recordTest, recordFeedback, resetStats }
+export { readStats, readEvents, recordTest, recordFeedback, resetStats }

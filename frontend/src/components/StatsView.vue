@@ -14,6 +14,13 @@ const sortedTypes = computed(() =>
 )
 const maxCount = computed(() => (sortedTypes.value.length ? sortedTypes.value[0][1] : 1))
 
+// 把票据时间戳格式化成 "MM-DD HH:mm:ss"
+function formatTime(ts) {
+  const d = new Date(ts)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+}
+
 // silent = 自动刷新的静默模式：不闪"读取中"，失败也保留旧数据（展示时网络抖一下不碍事）
 async function load(silent = false) {
   if (!key.value.trim()) {
@@ -101,6 +108,20 @@ onUnmounted(() => clearInterval(autoTimer))
           <span class="type-row-count">{{ count }}</span>
         </div>
       </div>
+      <div class="stats-section">
+        <h3>实时流水 <span class="events-count">最近 {{ stats.events?.length || 0 }} 条</span></h3>
+        <div v-if="!stats.events?.length" class="stats-empty">还没有记录</div>
+        <ul v-else class="events-list">
+          <li v-for="(e, i) in stats.events" :key="i" class="event-row">
+            <span class="event-time">{{ formatTime(e.ts) }}</span>
+            <span v-if="e.type === 'test'" class="event-tag event-test">测试</span>
+            <span v-else class="event-tag event-feedback">反馈</span>
+            <span v-if="e.type === 'test'" class="event-detail">{{ e.personality_type }} · 理由 {{ e.reasonFilled }}/{{ e.reasonTotal }}</span>
+            <span v-else class="event-detail">{{ e.agree ? '👍 喜欢' : '👎 不喜欢' }}</span>
+          </li>
+        </ul>
+      </div>
+
       <p v-if="error" class="stats-error">{{ error }}</p>
       <p class="stats-note">只记录聚合数字：次数、类型、填写率、反馈。不保存任何答案内容。</p>
     </template>
@@ -139,5 +160,54 @@ onUnmounted(() => clearInterval(autoTimer))
 .stats-updated {
   color: #94a3b8;
   font-size: 0.8rem;
+}
+
+.events-count {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+
+.events-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  font-size: 0.9rem;
+}
+
+.event-time {
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.event-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.event-test {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.event-feedback {
+  background: rgba(255, 159, 28, 0.15);
+  color: #ff9f1c;
+}
+
+.event-detail {
+  color: #cbd5e1;
 }
 </style>
