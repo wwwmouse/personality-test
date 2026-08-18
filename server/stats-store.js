@@ -160,9 +160,11 @@ async function readStats() {
 async function readEvents(limit = 50) {
   if (storageMode() === 'redis') {
     const redis = getRedis()
-    // LRANGE -limit -1 取列表最后 limit 条（旧→新），再倒过来让最新在前
+    // LRANGE -limit -1 取列表最后 limit 条（旧→新），再倒过来让最新在前。
+    // 注意：KV 客户端有时把元素自动翻译成对象返回，有时原样返回字符串——
+    // 两种都接住（字符串就 JSON.parse，对象直接用），不做假设。
     const raw = await redis.lrange(KEYS.events, -limit, -1)
-    return raw.reverse().map((s) => JSON.parse(s))
+    return raw.reverse().map((item) => (typeof item === 'string' ? JSON.parse(item) : item))
   }
   return readLocalTickets()
     .sort((a, b) => a.ts - b.ts)
