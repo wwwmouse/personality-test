@@ -26,14 +26,19 @@ const EMPTY = {
   feedback: { like: 0, dislike: 0 },
 }
 
+// 账本代号：所有键都挂在这个前缀下。
+// 想重启统计期（清零）= 改这个代号（v1 → v2 → …），新代号下没有旧账，天然从零开始。
+// 旧账的键留在库里不碍事（占几十字节）；git 历史也会留下"重启统计期"的显式记录。
+const LEDGER = 'stats:v1'
+
 // Redis 键名约定：集中写在一处，想改不散落
 const KEYS = {
-  totalTests: 'stats:totalTests',   // 数字：总测试次数
-  types: 'stats:types',             // HASH：类型 → 次数
-  reasonFilled: 'stats:reasonFilled', // 数字：填了理由的题数
-  reasonTotal: 'stats:reasonTotal',   // 数字：全部题数
-  feedback: 'stats:feedback',       // HASH：like/dislike → 次数
-  events: 'stats:events',           // LIST：每笔一张票据 JSON（明细流水）
+  totalTests: `${LEDGER}:totalTests`,   // 数字：总测试次数
+  types: `${LEDGER}:types`,             // HASH：类型 → 次数
+  reasonFilled: `${LEDGER}:reasonFilled`, // 数字：填了理由的题数
+  reasonTotal: `${LEDGER}:reasonTotal`,   // 数字：全部题数
+  feedback: `${LEDGER}:feedback`,       // HASH：like/dislike → 次数
+  events: `${LEDGER}:events`,           // LIST：每笔一张票据 JSON（明细流水）
 }
 
 let redisClient = null
