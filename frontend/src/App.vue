@@ -31,14 +31,39 @@ const analyzingLines = [
 const analyzingText = ref(analyzingLines[0])
 let analyzingTimer = null
 
+// 分析中的"假进度"：按渐近曲线爬升（先快后慢），永远压在 94 以下，
+// 结果回来瞬间跳到 100。真实信息只有"还没好/好了"，曲线让进度条不穿帮。
+const analyzeProgress = ref(0)
+// 小猫表情两帧轮换（🐱→😺→🐱），看起来像在眨眼
+const catFaces = ['🐱', '😺']
+const catFace = ref(catFaces[0])
+let analyzeStart = 0
+let analyzeTimer = null
+let catTimer = null
+
 watch(phase, (p) => {
   clearInterval(analyzingTimer)
+  clearInterval(analyzeTimer)
+  clearInterval(catTimer)
   if (p === 'analyzing') {
+    analyzeStart = Date.now()
+    analyzeProgress.value = 0
     analyzingText.value = analyzingLines[0]
     analyzingTimer = setInterval(() => {
       const next = (analyzingLines.indexOf(analyzingText.value) + 1) % analyzingLines.length
       analyzingText.value = analyzingLines[next]
     }, 4000)
+    analyzeTimer = setInterval(() => {
+      const elapsed = (Date.now() - analyzeStart) / 1000
+      const base = 92 * (1 - Math.exp(-elapsed / 8)) // 渐近爬向 92：8 秒过 58%、20 秒过 84%
+      const wiggle = Math.sin(elapsed * 2.2) * 1.2    // 轻微蠕动，看起来"活着"
+      analyzeProgress.value = Math.min(94, base + wiggle)
+    }, 200)
+    catTimer = setInterval(() => {
+      catFace.value = catFaces[(catFaces.indexOf(catFace.value) + 1) % catFaces.length]
+    }, 900)
+  } else if (p === 'result') {
+    analyzeProgress.value = 100 // 结果回来的瞬间满条
   }
 })
 
@@ -141,7 +166,6 @@ function handleRestart() {
     <OrbsBackground :speed="orbSpeed" :highlight="orbHighlight" />
     <header v-if="phase !== 'cover'" class="site-header">
       <h1>不止于MBTI</h1>
-      <p class="subtitle">20 道情景题 · 你的理由，会写进只属于你的报告</p>
     </header>
 
     <!-- 统计页：/stats 专属（口令门在 StatsView 里） -->
@@ -198,9 +222,16 @@ function handleRestart() {
       <button class="submit-btn" @click="handleSubmit">生成我的报告 ✨</button>
     </main>
 
-    <!-- 分析阶段：10~20 秒的等待，用轮播文案 + 跳动的小点陪着用户 -->
+    <!-- 分析阶段：10~20 秒的等待。小猫踱步/眨眼 + 假进度条 + 轮播文案 + 跳动的小点 -->
     <main v-else-if="phase === 'analyzing'" class="container">
       <div class="analyzing">
+        <div class="cat-stage">
+          <span class="cat-emoji">{{ catFace }}</span>
+          <span class="cat-shadow"></span>
+        </div>
+        <div class="analyze-progress">
+          <div class="analyze-progress-fill" :style="{ width: analyzeProgress + '%' }"></div>
+        </div>
         <p class="analyzing-text" :key="analyzingText">{{ analyzingText }}</p>
         <p class="analyzing-dots"><span>·</span><span>·</span><span>·</span></p>
       </div>
@@ -230,10 +261,71 @@ function handleRestart() {
 <style scoped>
 .analyzing {
   text-align: center;
-  padding: 80px 20px;
+  padding: 60px 20px 80px;
   font-size: 1.2rem;
   color: #666;
-  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* 小猫舞台：emoji 左右踱步，影子跟着伸缩，像猫在台子上走 */
+.cat-stage {
+  width: 88px;
+  margin: 0 auto 22px;
+}
+
+.cat-emoji {
+  display: block;
+  font-size: 3.2rem;
+  line-height: 1;
+  animation: cat-walk 2.6s ease-in-out infinite;
+}
+
+.cat-shadow {
+  display: block;
+  width: 38px;
+  height: 6px;
+  margin: 8px auto 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.3);
+  animation: cat-shadow 2.6s ease-in-out infinite;
+}
+
+@keyframes cat-walk {
+  0%,
+  100% {
+    transform: translateX(-14px);
+  }
+  50% {
+    transform: translateX(14px);
+  }
+}
+
+@keyframes cat-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: scaleX(0.55);
+    opacity: 0.2;
+  }
+}
+
+/* 假进度条：渐近爬升的填充 + 蓝青渐变，与八维品牌色一致 */
+.analyze-progress {
+  width: min(320px, 70vw);
+  height: 6px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.analyze-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #38bdf8, #4ecdc4);
+  transition: width 0.3s ease;
 }
 @keyframes pulse {
   0%,

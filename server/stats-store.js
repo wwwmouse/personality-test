@@ -48,8 +48,11 @@ let redisClient = null
 //     Vercel KV 集成会给 KV_REST_API_URL + KV_REST_API_TOKEN（KV 的底层就是 Upstash Redis）；
 //     Upstash 集成会给 UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN。
 //   - 本地开发两者都没有 → 本地票据目录
+//   - STATS_MODE=local 是本地开发常驻开关：即使 .env 里贴了 KV 变量（给 reset-stats.js
+//     清线上账本用的），本地测试也永远记本地账本，不污染线上正式统计期。
 //   - 在 Vercel 上却两者都没有 = 配置遗漏，宁可报错也不悄悄写"失忆文件"
 function storageMode() {
+  if (process.env.STATS_MODE === 'local') return 'local'
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
   if (url && token) return 'redis'
@@ -178,9 +181,10 @@ async function readEvents(limit = 50) {
 }
 
 // 清零：统计期重启用（reset-stats.js 脚本调用）。
+// target 显式指定清哪边：'redis' = 清线上，'local' = 清本地票据目录；不传则按 storageMode 自动判断。
 // 旧 Blob 时代的 .stats-local.json 不再读取——本地账随票据制重新开始，旧文件只是历史遗留。
-async function resetStats() {
-  if (storageMode() === 'redis') {
+async function resetStats(target = storageMode()) {
+  if (target === 'redis') {
     const redis = getRedis()
     await redis.del(KEYS.totalTests, KEYS.types, KEYS.reasonFilled, KEYS.reasonTotal, KEYS.feedback, KEYS.events)
     return
