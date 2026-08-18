@@ -10,7 +10,7 @@
 
 | 版本线 | 当前 | 标注位置 |
 |---|---|---|
-| 项目 | **v0.2.0** | `package.json` |
+| 项目 | **v0.3.0** | `package.json` |
 | 题库（题目） | **v2.1** | `docs/type-eval.md` 成绩单（沿革见 git 提交记录） |
 | 报告结构 | **v2.1** | `docs/product-spec.md` 第 4 节 |
 | Prompt（工作手册） | **v2.2** | `docs/prompt.md` 标题 |
@@ -21,7 +21,8 @@
 - AI 生成完整人格报告：四字母判型、八维功能解读与评分、优势与盲点、压力篇、类型配对、金句
 - 后端"验货重写"：报告按格式合同逐项校验，不合格自动退回重写（最多 3 次）
 - 暗黑霓虹视觉：八维浮标背景、报告光效（英雄→阿尼玛四档递减）、荧光评分条
-- 使用统计（测试次数 / 类型分布 / 理由填写率 / 反馈）+ 口令保护的 `/stats` 统计页
+- 使用统计（测试次数 / 类型分布 / 理由填写率 / 反馈）+ 口令保护的 `/stats` 统计页（10 秒自动刷新 + 最近 50 笔实时流水）
+- 等待界面：小猫动画 + 假进度条 + 轮播文案（AI 时长不可知，进度条永不穿帮）
 - 报告分享：复制文案、保存截图
 - 隐私红线：只存聚合数字，不保存任何答案与理由原文
 
@@ -32,7 +33,7 @@
 | 前端 | Vue 3 + Vite |
 | 后端 | Express 5（本地）/ Vercel Serverless Functions（线上，共用同一份 app.js） |
 | AI | DeepSeek chat API |
-| 存储 | Vercel Blob（统计账本，私密仓库） |
+| 存储 | Vercel KV（统计账本：原子计数 + 明细票据） |
 | 部署 | Vercel（GitHub push 自动部署）+ 自有域名 |
 
 ## 本地开发
@@ -51,10 +52,12 @@ npm run dev          # http://localhost:5173，/api 由 Vite 代理转给 3001 �
 
 命令行试飞（不经过前端直接测后端）：`cd server && npm run test:analyze`
 
+清账（统计期重启）：`cd server && node --env-file-if-exists=.env reset-stats.js --yes`（清线上账本，.env 需配 KV 变量）；`--local` 清本地测试账本
+
 ## 部署
 
 1. Vercel 导入本仓库：Build Command 用默认 `npm run build`，Output Directory 填 `frontend/dist`
-2. 环境变量：`DEEPSEEK_API_KEY`、`STATS_KEY`；在 Storage 里创建 Blob 存储（凭据自动注入）
+2. 环境变量：`DEEPSEEK_API_KEY`、`STATS_KEY`；在 Storage 里创建 KV 数据库并连接到项目（`KV_REST_API_URL` / `KV_REST_API_TOKEN` 自动注入）
 3. 每次 push 到 main 自动部署
 
 ## 文档
@@ -67,4 +70,4 @@ npm run dev          # http://localhost:5173，/api 由 Vite 代理转给 3001 �
 
 ## 隐私
 
-统计系统只记录聚合数字（测试次数、类型分布、理由填写率、反馈计数），不保存答案、理由等任何原文；账本存放在私密 Blob 仓库中，只有带凭据的后端可读写。
+统计系统只记录聚合数字与明细票据（时间戳、判型、理由填写数、反馈），不保存答案、理由等任何原文；账本存放在 Vercel KV 云端仓库，只有带凭据的后端可读写。
