@@ -24,6 +24,26 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
 
+// 毕比模型 16 型阳面栈（英雄→阿尼玛）。确定性内容代码管，不交给 AI 记
+const TYPE_STACKS = {
+  INTP: ['Ti', 'Ne', 'Si', 'Fe'],
+  ENTP: ['Ne', 'Ti', 'Fe', 'Si'],
+  INTJ: ['Ni', 'Te', 'Fi', 'Se'],
+  ENTJ: ['Te', 'Ni', 'Se', 'Fi'],
+  INFP: ['Fi', 'Ne', 'Si', 'Te'],
+  ENFP: ['Ne', 'Fi', 'Te', 'Si'],
+  INFJ: ['Ni', 'Fe', 'Ti', 'Se'],
+  ENFJ: ['Fe', 'Ni', 'Se', 'Ti'],
+  ISTP: ['Ti', 'Se', 'Ni', 'Fe'],
+  ESTP: ['Se', 'Ti', 'Fe', 'Ni'],
+  ISFP: ['Fi', 'Se', 'Ni', 'Te'],
+  ESFP: ['Se', 'Fi', 'Te', 'Ni'],
+  ISTJ: ['Si', 'Te', 'Fi', 'Ne'],
+  ESTJ: ['Te', 'Si', 'Ne', 'Fi'],
+  ISFJ: ['Si', 'Fe', 'Ti', 'Ne'],
+  ESFJ: ['Fe', 'Si', 'Ne', 'Ti'],
+}
+
 // 验货：按 prompt.md 第 4 章的合同逐项检查 AI 输出。
 // DeepSeek 暂不支持 json_schema 强约束，所以后端自己当质检员。
 function validateReport(r) {
@@ -32,17 +52,29 @@ function validateReport(r) {
   for (const f of ['personality_type', 'type_name', 'punchline', 'description', 'disclaimer']) {
     if (typeof r[f] !== 'string') problems.push(`缺少字符串字段 ${f}`)
   }
+  const POSITIONS = ['英雄', '父母', '永恒少年', '阿尼玛/阿尼姆斯']
   if (!Array.isArray(r.functions) || r.functions.length !== 4) {
     problems.push('functions 必须是恰好 4 项的数组')
   } else {
     r.functions.forEach((f, i) => {
-      if (!f || typeof f.position !== 'string' || typeof f.function !== 'string' || typeof f.insight !== 'string') {
+      if (!f || typeof f.function !== 'string' || typeof f.insight !== 'string') {
         problems.push(`functions[${i}] 结构不对`)
+      }
+      if (f && f.position !== POSITIONS[i]) {
+        problems.push(`functions[${i}].position 必须是"${POSITIONS[i]}"`)
       }
       if (!Number.isInteger(f.score) || f.score < 0 || f.score > 100) {
         problems.push(`functions[${i}].score 必须是 0~100 整数`)
       }
     })
+  }
+  // 四字母与阳面栈必须自洽：防止"判 INTP 却按 ENTP 解读功能"的自打脸报告
+  const stack = TYPE_STACKS[r?.personality_type]
+  if (stack && Array.isArray(r.functions) && r.functions.length === 4) {
+    const actual = r.functions.map((f) => (f ? f.function : '')).join(',')
+    if (stack.join(',') !== actual) {
+      problems.push(`personality_type 与功能栈矛盾（${r.personality_type} 应为 ${stack.join('/')}，实际 ${actual}）`)
+    }
   }
   if (!Array.isArray(r.under_pressure) || r.under_pressure.length !== 3) {
     problems.push('under_pressure 必须是恰好 3 项的数组')
@@ -61,7 +93,7 @@ function validateReport(r) {
 }
 
 // 打一次电话给 DeepSeek。返回 { report } 或 { error }
-async function callDeepSeek(messages) {
+async function callDeepSeek(messages, temperature) {
   const apiKey = process.env.DEEPSEEK_API_KEY
   const aiResponse = await fetch('https://api.deepseek.com/chat/completions', {
     method: 'POST',
@@ -72,7 +104,7 @@ async function callDeepSeek(messages) {
     body: JSON.stringify({
       model: 'deepseek-chat',
       messages,
-      temperature: 0.8,                            // 0=刻板 1=跳脱，0.8 给报告留点文采
+      temperature,                                 // 0=刻板 1=跳脱，数值由理由填写率决定（见 /api/analyze）
       response_format: { type: 'json_object' },    // 让 AI 只吐 JSON，方便解析
     }),
     signal: AbortSignal.timeout(120_000),          // 120 秒没回就放弃
@@ -113,6 +145,11 @@ app.post('/api/analyze', async (req, res) => {
   }
 
   try {
+    // 温度随理由填写率走（0.3 + 0.6 × 填写率）：理由越少，信号越弱，判型越要保守
+    // （低温=刻板但稳，避免空理由用户拿到"骰子判型"）；理由写满则放开文采与多样性
+    const filled = answers.filter((a) => a.reason && a.reason.trim()).length
+    const temperature = Math.round((0.3 + 0.6 * (filled / answers.length)) * 100) / 100
+
     const baseMessages = [
       { role: 'system', content: SYSTEM_PROMPT },          // 工作手册
       { role: 'user', content: JSON.stringify(answers) },  // 用户的 20 题答案
@@ -122,7 +159,7 @@ app.post('/api/analyze', async (req, res) => {
 
     // 最多 3 次：每次验货，不合格就把"差评"和上次输出一起发回，让 AI 重写
     for (let attempt = 0; attempt < 3; attempt++) {
-      const result = await callDeepSeek(messages)
+      const result = await callDeepSeek(messages, temperature)
       if (result.error) return res.status(502).json({ error: result.error })
 
       const problems = validateReport(result.report)
@@ -143,7 +180,6 @@ app.post('/api/analyze', async (req, res) => {
     // 埋点记账：只记成功出报告的测试，只记数字（次数/类型/理由填写情况）。
     // 记账失败绝不能拦着报告——用户没做错任何事，悄悄记日志即可。
     try {
-      const filled = answers.filter((a) => a.reason && a.reason.trim()).length
       await recordTest({ type: report.personality_type, filled, total: answers.length })
     } catch (err) {
       console.error('统计记账失败：', err.message)

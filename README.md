@@ -13,7 +13,7 @@
 | 项目 | **v0.3.0** | `package.json` |
 | 题库（题目） | **v2.1** | `docs/type-eval.md` 成绩单（沿革见 git 提交记录） |
 | 报告结构 | **v2.3** | `docs/product-spec.md` 第 4 节 |
-| Prompt（工作手册） | **v2.4** | `docs/prompt.md` 标题 |
+| Prompt（工作手册） | **v2.5** | `docs/prompt.md` 标题 |
 
 ## 功能
 
