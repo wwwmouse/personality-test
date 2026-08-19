@@ -17,11 +17,12 @@ const questions = JSON.parse(
 const SYSTEM_PROMPT = fs.readFileSync(path.join(import.meta.dirname, '../docs/prompt.md'), 'utf8')
 
 // 打一次电话：返回 { report } 或 { error }
-async function analyze(picks) {
+// reasons 可选：档案自带理由（模拟真实用户），缺的题留空
+async function analyze(picks, reasons) {
   const answers = questions.map((q) => {
     const key = picks[q.id]
     const option = q.options.find((o) => o.key === key)
-    return { id: q.id, question: q.text, choice: key, choice_text: option.text, reason: '' }
+    return { id: q.id, question: q.text, choice: key, choice_text: option.text, reason: (reasons && reasons[q.id]) || '' }
   })
 
   const res = await fetch('https://api.deepseek.com/chat/completions', {
@@ -76,7 +77,7 @@ for (const p of profiles) {
 
   if (rounds === 1) {
     const startedAt = Date.now()
-    const { report, error } = await analyze(p.picks)
+    const { report, error } = await analyze(p.picks, p.reasons)
     if (error) {
       console.log(`【${p.name}】→ ${error}\n`)
       continue
@@ -94,7 +95,7 @@ for (const p of profiles) {
   // 多轮：逐轮只记判型，最后按众数算成绩
   const types = []
   for (let r = 1; r <= rounds; r++) {
-    const { report, error } = await analyze(p.picks)
+    const { report, error } = await analyze(p.picks, p.reasons)
     types.push(error ? 'ERR' : report.personality_type)
   }
   const valid = types.filter((t) => t !== 'ERR')
