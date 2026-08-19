@@ -44,6 +44,11 @@ const totalScore = computed(() => {
   return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
 })
 
+// 类型配对：新版报告是 2 项数组（格子法）。老报告存的是字符串，兜底走旧渲染
+const matches = computed(() =>
+  Array.isArray(props.report.type_matches) ? props.report.type_matches : []
+)
+
 // 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录。
 // 初始化时从本地戳恢复：一份报告一生只能点一次，刷新页面也不会复活按钮
 const feedbackState = ref(localStorage.getItem('feedback-done') || '')
@@ -191,21 +196,7 @@ async function sendFeedback(agree) {
       </div>
     </section>
 
-    <!-- 4. 优势与盲点 -->
-    <section class="report-section">
-      <h2>优势</h2>
-      <ul>
-        <li v-for="(s, i) in report.strengths" :key="i">{{ s }}</li>
-      </ul>
-    </section>
-    <section class="report-section">
-      <h2>盲点</h2>
-      <ul>
-        <li v-for="(b, i) in report.blind_spots" :key="i">{{ b }}</li>
-      </ul>
-    </section>
-
-    <!-- 5. 压力下的你 + 类型配对（v2 新增） -->
+    <!-- 4. 压力下的你 + 类型配对（v2 新增；v2.2 起优势/盲点模块删除） -->
     <section class="report-section">
       <h2>压力下的你</h2>
       <p class="pressure-label">高压之下</p>
@@ -215,13 +206,23 @@ async function sendFeedback(agree) {
     </section>
     <section class="report-section">
       <h2>类型配对</h2>
-      <p>{{ report.type_matches }}</p>
+      <template v-if="matches.length">
+        <div class="match-item" v-for="(m, i) in matches" :key="i">
+          <div class="match-head">
+            <span class="match-kind">{{ m.kind }}</span>
+            <span class="match-type">{{ m.type }}</span>
+          </div>
+          <p class="match-text">{{ m.reason }}</p>
+          <p class="match-scene">🎬 {{ m.scene }}</p>
+        </div>
+      </template>
+      <p v-else>{{ report.type_matches }}</p>
     </section>
 
-    <!-- 6. 免责声明 -->
+    <!-- 5. 免责声明 -->
     <p class="disclaimer">{{ report.disclaimer }}</p>
 
-    <!-- 6.5 分享：复制文案 + 保存截图（拉朋友来的传播闭环） -->
+    <!-- 5.5 分享：复制文案 + 保存截图（拉朋友来的传播闭环） -->
     <section class="share-box">
       <p class="share-title">把报告分享给朋友</p>
       <div class="share-btns">
@@ -231,7 +232,7 @@ async function sendFeedback(agree) {
       <p v-if="shareTip" class="share-tip">{{ shareTip }}</p>
     </section>
 
-    <!-- 7. 反馈：只记一个数字，不记任何个人内容 -->
+    <!-- 6. 反馈：只记一个数字，不记任何个人内容 -->
     <section class="feedback-box">
       <p class="feedback-title">对报告满意吗？</p>
       <template v-if="!feedbackState">

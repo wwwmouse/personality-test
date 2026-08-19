@@ -388,12 +388,6 @@ body {
   margin: 0 0 10px;
 }
 
-.report-section ul {
-  margin: 0;
-  padding-left: 20px;
-  line-height: 1.8;
-}
-
 .report-section p {
   line-height: 1.8;
   margin: 0;
@@ -477,6 +471,40 @@ body {
 .pressure-text {
   line-height: 1.8;
   margin: 0 0 4px;
+}
+
+/* ============ 类型配对：两项格子卡（合拍/火花） ============ */
+.report-section .match-item {
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #10101a;
+}
+
+.report-section .match-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 6px;
+}
+
+.match-kind {
+  display: inline-block;
+  font-size: 13px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.report-section .match-type {
+  font-weight: 600;
+}
+
+.report-section .match-scene {
+  margin: 6px 0 0;
+  color: var(--text-soft);
 }
 
 /* ============ 答题进度条（吸顶，滚动时始终可见） ============ */

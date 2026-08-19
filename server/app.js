@@ -29,7 +29,7 @@ app.get('/api/health', (req, res) => {
 function validateReport(r) {
   const problems = []
   if (!r || typeof r !== 'object') return ['输出不是 JSON 对象']
-  for (const f of ['personality_type', 'type_name', 'punchline', 'description', 'type_matches', 'disclaimer']) {
+  for (const f of ['personality_type', 'type_name', 'punchline', 'description', 'disclaimer']) {
     if (typeof r[f] !== 'string') problems.push(`缺少字符串字段 ${f}`)
   }
   if (!Array.isArray(r.functions) || r.functions.length !== 4) {
@@ -44,11 +44,18 @@ function validateReport(r) {
       }
     })
   }
-  for (const k of ['strengths', 'blind_spots']) {
-    if (!Array.isArray(r[k]) || r[k].length !== 4) problems.push(`${k} 必须是恰好 4 项的数组`)
-  }
   if (!Array.isArray(r.under_pressure) || r.under_pressure.length !== 2) {
     problems.push('under_pressure 必须是恰好 2 项的数组')
+  }
+  // 类型配对（v1.0 格子法）：2 项数组（合拍/火花），每项四个字段，逼 AI 写满篇幅
+  if (!Array.isArray(r.type_matches) || r.type_matches.length !== 2) {
+    problems.push('type_matches 必须是恰好 2 项的数组')
+  } else {
+    r.type_matches.forEach((m, i) => {
+      if (!m || typeof m.kind !== 'string' || typeof m.type !== 'string' || typeof m.reason !== 'string' || typeof m.scene !== 'string') {
+        problems.push(`type_matches[${i}] 结构不对`)
+      }
+    })
   }
   return problems
 }
