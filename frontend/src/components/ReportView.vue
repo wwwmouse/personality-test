@@ -49,6 +49,16 @@ const matches = computed(() =>
   Array.isArray(props.report.type_matches) ? props.report.type_matches : []
 )
 
+// 压力篇：新版是 3 段（压力按钮/高压之下/风暴过后）；老报告只有 2 段，缺哪段藏哪段
+const pressure = computed(() => {
+  const p = props.report.under_pressure || []
+  return [
+    { label: '🎯 压力按钮', text: p[0] || '' },
+    { label: '🔥 高压之下', text: p[1] || '' },
+    { label: '🌊 风暴过后', text: p[2] || '' },
+  ].filter((x) => x.text)
+})
+
 // 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录。
 // 初始化时从本地戳恢复：一份报告一生只能点一次，刷新页面也不会复活按钮
 const feedbackState = ref(localStorage.getItem('feedback-done') || '')
@@ -196,13 +206,13 @@ async function sendFeedback(agree) {
       </div>
     </section>
 
-    <!-- 4. 压力下的你 + 类型配对（v2 新增；v2.2 起优势/盲点模块删除） -->
+    <!-- 4. 压力下的你 + 类型配对（v2.2 起删优势/盲点、压力篇三段式） -->
     <section class="report-section">
       <h2>压力下的你</h2>
-      <p class="pressure-label">高压之下</p>
-      <p class="pressure-text">{{ report.under_pressure[0] }}</p>
-      <p class="pressure-label">风暴过后</p>
-      <p class="pressure-text">{{ report.under_pressure[1] }}</p>
+      <template v-for="(seg, i) in pressure" :key="i">
+        <p class="pressure-label">{{ seg.label }}</p>
+        <p class="pressure-text">{{ seg.text }}</p>
+      </template>
     </section>
     <section class="report-section">
       <h2>类型配对</h2>

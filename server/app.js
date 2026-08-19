@@ -44,8 +44,8 @@ function validateReport(r) {
       }
     })
   }
-  if (!Array.isArray(r.under_pressure) || r.under_pressure.length !== 2) {
-    problems.push('under_pressure 必须是恰好 2 项的数组')
+  if (!Array.isArray(r.under_pressure) || r.under_pressure.length !== 3) {
+    problems.push('under_pressure 必须是恰好 3 项的数组')
   }
   // 类型配对（v1.0 格子法）：2 项数组（合拍/火花），每项四个字段，逼 AI 写满篇幅
   if (!Array.isArray(r.type_matches) || r.type_matches.length !== 2) {
