@@ -245,6 +245,30 @@ body {
   background: #20202e;
 }
 
+/* ============ 建议输入框（报告页开放题，2026-08-20 新增） ============ */
+.suggest-input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  color: var(--text);
+  background: #1b1b29;
+  resize: vertical;
+  min-height: 3.2em;
+}
+
+.suggest-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #20202e;
+}
+
 /* ============ 按钮 ============ */
 .submit-btn {
   padding: 14px;
@@ -362,11 +386,18 @@ body {
   animation: score-glow 2.2s ease-in-out infinite;
 }
 
+/* 金句 = 报告的刀尖：放大 + 加粗 + 渐变高光 + 居中（2026-08-20 用户点名升级） */
 .punchline {
-  font-weight: 600;
-  font-size: 17px;
+  font-size: 20px;
+  font-weight: 800;
   line-height: 1.7;
   margin: 0 0 12px;
+  text-align: center;
+  background: linear-gradient(100deg, #4ecdc4, #38bdf8 50%, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.35));
 }
 
 .description {
@@ -447,14 +478,13 @@ body {
   animation: score-glow 2s ease-in-out infinite;
 }
 
+/* 呼吸只改光晕、不改亮度：亮度脉冲会让条目测比数值长（2026-08-20 用户报告"与分数不符"） */
 @keyframes score-glow {
   0%, 100% {
     box-shadow: 0 0 6px 1px var(--fill, #38bdf8);
-    filter: brightness(1);
   }
   50% {
-    box-shadow: 0 0 16px 4px var(--fill, #38bdf8);
-    filter: brightness(1.35);
+    box-shadow: 0 0 10px 2px var(--fill, #38bdf8);
   }
 }
 
@@ -693,7 +723,8 @@ body {
   transition: none !important;
 }
 
-.screenshot-mode .total-score-num {
+.screenshot-mode .total-score-num,
+.screenshot-mode .punchline {
   background: none;
   color: var(--accent);
 }
