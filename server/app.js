@@ -8,6 +8,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
+import questionsData from '../frontend/src/data/questions.json' with { type: 'json' }
 import { readStats, readEvents, recordTest, recordFeedback, recordSuggestion } from './stats-store.js'
 import { loadQuestions, ledgerSummary } from './scorer.mjs'
 
@@ -20,9 +21,10 @@ app.use(express.json())
 const promptPath = path.join(import.meta.dirname, '..', 'docs', 'prompt.md')
 const SYSTEM_PROMPT = fs.readFileSync(promptPath, 'utf8')
 
-// 启动时读一次题库：选项的功能标签+权重在计分器（scorer.mjs）手里，用来算"选项账本"
-const questionsPath = path.join(import.meta.dirname, '..', 'frontend', 'src', 'data', 'questions.json')
-const QUESTIONS = loadQuestions(JSON.parse(fs.readFileSync(questionsPath, 'utf8')))
+// 启动时读一次题库：选项的功能标签+权重在计分器（scorer.mjs）手里，用来算"选项账本"。
+// 必须用静态 import 而不是 fs.readFileSync——Vercel 的 nft 打包只认静态依赖，
+// 运行时读的文件不在"行李清单"里，线上函数会因找不到文件整店崩溃（2026-08-20 实战踩坑）。
+const QUESTIONS = loadQuestions(questionsData)
 
 // 健康检查接口
 app.get('/api/health', (req, res) => {
