@@ -300,7 +300,7 @@ async function sendSuggestion() {
         <button class="feedback-btn" :disabled="suggestLoading || !suggestText.trim()" @click="sendSuggestion">告诉小猫</button>
         <p v-if="suggestError" class="feedback-done">{{ suggestError }}</p>
       </template>
-      <p v-else class="feedback-done">建议已收到，谢谢^^</p>
+      <p v-else class="feedback-done">小猫收到了喵(=^･ω･^=)</p>
     </section>
   </div>
 </template>

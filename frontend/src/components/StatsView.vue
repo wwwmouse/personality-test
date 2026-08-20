@@ -140,9 +140,11 @@ onUnmounted(() => clearInterval(autoTimer))
                 <span class="event-detail">{{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}</span>
               </template>
               <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '👍 满意' : '👎 不满意' }}</span>
-              <span v-if="row.suggest" class="event-tag event-suggest">建议</span>
             </div>
-            <p v-if="row.suggest" class="event-suggest-text">{{ row.suggest.text }}</p>
+            <div v-if="row.suggest" class="event-suggest-row">
+              <span class="event-tag event-suggest">建议</span>
+              <span class="event-suggest-text">{{ row.suggest.text }}</span>
+            </div>
           </li>
         </ul>
       </div>
@@ -220,9 +222,17 @@ onUnmounted(() => clearInterval(autoTimer))
   padding-bottom: 4px;
 }
 
+.event-suggest-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 0 8px;
+  font-size: 0.9rem;
+}
+
 .event-suggest-text {
-  margin: 0 0 6px;
-  padding-left: 4px;
+  flex: 1;
+  margin: 0;
   color: #cbd5e1;
   font-size: 0.85rem;
   line-height: 1.6;
