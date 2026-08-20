@@ -8,7 +8,7 @@
 import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
-import { readStats, readEvents, recordTest, recordFeedback } from './stats-store.js'
+import { readStats, readEvents, recordTest, recordFeedback, recordSuggestion } from './stats-store.js'
 import { loadQuestions, ledgerSummary } from './scorer.mjs'
 
 const app = express()
@@ -211,6 +211,20 @@ app.post('/api/feedback', async (req, res) => {
   } catch (err) {
     console.error('反馈记账失败：', err.message)
     res.status(500).json({ error: '反馈记录失败' })
+  }
+})
+
+// 建议接口（2026-08-20 新增）：报告页的开放题。只存文字（≤500 字），
+// 进明细票据、不做聚合；记账失败不拦用户（与反馈同一原则）。
+app.post('/api/suggest', async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim().slice(0, 500) : ''
+  if (!text) return res.status(400).json({ error: '建议内容不能为空' })
+  try {
+    await recordSuggestion({ text })
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('建议记账失败：', err.message)
+    res.status(500).json({ error: '建议提交失败' })
   }
 })
 

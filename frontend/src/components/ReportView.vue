@@ -154,6 +154,37 @@ async function sendFeedback(agree) {
     feedbackLoading.value = false
   }
 }
+
+// 建议环节（2026-08-20 新增）：开放题，写什么都行；一份报告一生提一条（localStorage 盖戳）
+const suggestState = ref(localStorage.getItem('suggest-done') || '')
+const suggestText = ref('')
+const suggestLoading = ref(false)
+const suggestError = ref('')
+
+async function sendSuggestion() {
+  const text = suggestText.value.trim()
+  if (!text || suggestState.value || suggestLoading.value) return
+  suggestLoading.value = true
+  suggestError.value = ''
+  try {
+    const res = await fetch('/api/suggest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    })
+    if (!res.ok) throw new Error()
+    suggestState.value = 'done'
+    try {
+      localStorage.setItem('suggest-done', suggestState.value)
+    } catch {
+      // 盖不了戳就算了：最坏情况是刷新后能再提一条
+    }
+  } catch {
+    suggestError.value = '发送失败，稍后再试'
+  } finally {
+    suggestLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -251,6 +282,18 @@ async function sendFeedback(agree) {
       </template>
       <p v-else-if="feedbackState === 'like'" class="feedback-done">谢谢喵^^</p>
       <p v-else class="feedback-done">对不起喵……QAQ</p>
+
+      <template v-if="!suggestState">
+        <textarea
+          v-model="suggestText"
+          class="suggest-input"
+          placeholder="还有什么想对我们说的？功能建议、bug、吐槽都行（选填）"
+          maxlength="500"
+        ></textarea>
+        <button class="feedback-btn" :disabled="suggestLoading || !suggestText.trim()" @click="sendSuggestion">提交建议</button>
+        <p v-if="suggestError" class="feedback-done">{{ suggestError }}</p>
+      </template>
+      <p v-else class="feedback-done">建议已收到，谢谢^^</p>
     </section>
   </div>
 </template>

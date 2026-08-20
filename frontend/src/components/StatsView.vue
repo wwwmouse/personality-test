@@ -115,15 +115,17 @@ onUnmounted(() => clearInterval(autoTimer))
           <li v-for="(e, i) in stats.events" :key="i" class="event-row">
             <span class="event-time">{{ formatTime(e.ts) }}</span>
             <span v-if="e.type === 'test'" class="event-tag event-test">测试</span>
+            <span v-else-if="e.type === 'suggest'" class="event-tag event-suggest">建议</span>
             <span v-else class="event-tag event-feedback">反馈</span>
             <span v-if="e.type === 'test'" class="event-detail">{{ e.personality_type }} · 理由 {{ e.reasonFilled }}/{{ e.reasonTotal }}</span>
+            <span v-else-if="e.type === 'suggest'" class="event-detail">{{ e.text }}</span>
             <span v-else class="event-detail">{{ e.agree ? '👍 喜欢' : '👎 不喜欢' }}</span>
           </li>
         </ul>
       </div>
 
       <p v-if="error" class="stats-error">{{ error }}</p>
-      <p class="stats-note">只记录聚合数字：次数、类型、填写率、反馈。不保存任何答案内容。</p>
+      <p class="stats-note">只记录聚合数字、判型，以及用户自愿填写的建议文字。不保存任何答案与理由原文。</p>
     </template>
   </div>
 </template>
@@ -205,6 +207,11 @@ onUnmounted(() => clearInterval(autoTimer))
 .event-feedback {
   background: rgba(255, 159, 28, 0.15);
   color: #ff9f1c;
+}
+
+.event-suggest {
+  background: rgba(78, 205, 196, 0.15);
+  color: #4ecdc4;
 }
 
 .event-detail {

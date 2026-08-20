@@ -130,6 +130,17 @@ async function recordFeedback({ agree }) {
   writeLocalTicket(ticket)
 }
 
+// 每笔建议记一张明细票（开放题只进流水，不做聚合）
+async function recordSuggestion({ text }) {
+  const ticket = { ts: Date.now(), type: 'suggest', text }
+  if (storageMode() === 'redis') {
+    const redis = getRedis()
+    await redis.rpush(KEYS.events, JSON.stringify(ticket))
+    return
+  }
+  writeLocalTicket(ticket)
+}
+
 // 读账：Redis 分支一次读出聚合键；本地分支把票加总
 async function readStats() {
   if (storageMode() === 'redis') {
@@ -192,4 +203,4 @@ async function resetStats(target = storageMode()) {
   if (fs.existsSync(LOCAL_DIR)) fs.rmSync(LOCAL_DIR, { recursive: true, force: true })
 }
 
-export { readStats, readEvents, recordTest, recordFeedback, resetStats }
+export { readStats, readEvents, recordTest, recordFeedback, recordSuggestion, resetStats }

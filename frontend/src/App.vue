@@ -137,8 +137,9 @@ async function handleSubmit() {
     report.value = data
     try {
       localStorage.setItem('last-report', JSON.stringify(data))
-      // 新报告 = 新的反馈机会：作废上一份报告的"已反馈"戳
+      // 新报告 = 新的反馈机会：作废上一份报告的"已反馈/已建议"戳
       localStorage.removeItem('feedback-done')
+      localStorage.removeItem('suggest-done')
     } catch {
       // 浏览器不让存（隐私模式等）：不影响看报告，只影响下次回看
     }
