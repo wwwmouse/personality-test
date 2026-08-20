@@ -9,6 +9,7 @@ import express from 'express'
 import fs from 'node:fs'
 import path from 'node:path'
 import { readStats, readEvents, recordTest, recordFeedback } from './stats-store.js'
+import { loadQuestions, ledgerSummary } from './scorer.mjs'
 
 const app = express()
 
@@ -18,6 +19,10 @@ app.use(express.json())
 // 启动时读一次"AI 工作手册"（docs/prompt.md 全文），当作 system prompt 备用
 const promptPath = path.join(import.meta.dirname, '..', 'docs', 'prompt.md')
 const SYSTEM_PROMPT = fs.readFileSync(promptPath, 'utf8')
+
+// 启动时读一次题库：选项的功能标签+权重在计分器（scorer.mjs）手里，用来算"选项账本"
+const questionsPath = path.join(import.meta.dirname, '..', 'frontend', 'src', 'data', 'questions.json')
+const QUESTIONS = loadQuestions(JSON.parse(fs.readFileSync(questionsPath, 'utf8')))
 
 // 健康检查接口
 app.get('/api/health', (req, res) => {
@@ -150,9 +155,11 @@ app.post('/api/analyze', async (req, res) => {
     const filled = answers.filter((a) => a.reason && a.reason.trim()).length
     const temperature = Math.round((0.3 + 0.6 * (filled / answers.length)) * 100) / 100
 
+    // 选项账本由代码算好（确定性），AI 按 prompt 第 3 章的三区裁决使用，不自己重算
+    const ledger = ledgerSummary(QUESTIONS, answers)
     const baseMessages = [
       { role: 'system', content: SYSTEM_PROMPT },          // 工作手册
-      { role: 'user', content: JSON.stringify(answers) },  // 用户的 20 题答案
+      { role: 'user', content: JSON.stringify({ answers, ledger }) },
     ]
     let messages = baseMessages
     let report = null
