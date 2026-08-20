@@ -269,6 +269,16 @@ body {
   background: #20202e;
 }
 
+/* 建议模块（2026-08-20 从反馈拆出独立模块）：青色调与反馈的蓝色区分 */
+.suggest-box {
+  margin-top: 16px;
+  padding: 16px;
+  text-align: center;
+  background: rgba(78, 205, 196, 0.08);
+  border: 1px solid rgba(78, 205, 196, 0.25);
+  border-radius: 12px;
+}
+
 /* ============ 按钮 ============ */
 .submit-btn {
   padding: 14px;
@@ -730,7 +740,8 @@ body {
 }
 
 .screenshot-mode .share-box,
-.screenshot-mode .feedback-box {
+.screenshot-mode .feedback-box,
+.screenshot-mode .suggest-box {
   display: none;
 }
 

@@ -71,6 +71,9 @@ watch(phase, (p) => {
 // 这样看完报告关掉页面，也不用重新答一遍题
 const hasSavedReport = ref(localStorage.getItem('last-report') !== null)
 
+// 会话号：每次提交生成一个，反馈/建议凭它挂到这张测试票上（后台流水三合一）
+const sessionId = ref('')
+
 function viewSavedReport() {
   try {
     report.value = JSON.parse(localStorage.getItem('last-report'))
@@ -125,18 +128,23 @@ async function handleSubmit() {
   }
 
   errorMessage.value = ''
+  sessionId.value =
+    typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
   phase.value = 'analyzing'
   try {
     const res = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers: buildPayload() }),
+      body: JSON.stringify({ answers: buildPayload(), session: sessionId.value }),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`)
     report.value = data
     try {
       localStorage.setItem('last-report', JSON.stringify(data))
+      localStorage.setItem('last-session', sessionId.value)
       // 新报告 = 新的反馈机会：作废上一份报告的"已反馈/已建议"戳
       localStorage.removeItem('feedback-done')
       localStorage.removeItem('suggest-done')

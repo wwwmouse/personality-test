@@ -90,14 +90,15 @@ function readLocalTickets() {
 
 // ---- 记账接口（两个仓库共用同一套入口） ----
 
-// 每笔测试记一笔：聚合数字 +1，明细列表推一张票
-async function recordTest({ type, filled, total }) {
+// 每笔测试记一笔：聚合数字 +1，明细列表推一张票（会话号：反馈/建议凭它挂靠，流水三合一）
+async function recordTest({ type, filled, total, session }) {
   const ticket = {
     ts: Date.now(),
     type: 'test',
     personality_type: type,
     reasonFilled: filled,
     reasonTotal: total,
+    session: session || '',
   }
   if (storageMode() === 'redis') {
     const redis = getRedis()
@@ -116,9 +117,9 @@ async function recordTest({ type, filled, total }) {
   writeLocalTicket(ticket)
 }
 
-// 每笔反馈记一笔：只记喜欢/不喜欢两个数字（外加一张明细票，格式统一）
-async function recordFeedback({ agree }) {
-  const ticket = { ts: Date.now(), type: 'feedback', agree }
+// 每笔反馈记一笔：只记喜欢/不喜欢两个数字（外加一张明细票，格式统一；带会话号挂靠测试票）
+async function recordFeedback({ agree, session }) {
+  const ticket = { ts: Date.now(), type: 'feedback', agree, session: session || '' }
   if (storageMode() === 'redis') {
     const redis = getRedis()
     await redis.multi()
@@ -130,9 +131,9 @@ async function recordFeedback({ agree }) {
   writeLocalTicket(ticket)
 }
 
-// 每笔建议记一张明细票（开放题只进流水，不做聚合）
-async function recordSuggestion({ text }) {
-  const ticket = { ts: Date.now(), type: 'suggest', text }
+// 每笔建议记一张明细票（开放题只进流水，不做聚合；带会话号挂靠测试票）
+async function recordSuggestion({ text, session }) {
+  const ticket = { ts: Date.now(), type: 'suggest', text, session: session || '' }
   if (storageMode() === 'redis') {
     const redis = getRedis()
     await redis.rpush(KEYS.events, JSON.stringify(ticket))

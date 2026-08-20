@@ -62,6 +62,9 @@ const pressure = computed(() => {
 // 反馈按钮状态：'' = 还没点；'like'/'dislike' = 已记录。
 // 初始化时从本地戳恢复：一份报告一生只能点一次，刷新页面也不会复活按钮
 const feedbackState = ref(localStorage.getItem('feedback-done') || '')
+
+// 会话号：反馈/建议凭它挂到对应的测试票上（后台流水三合一）；回看旧报告也认最后一次测试的会话
+const session = localStorage.getItem('last-session') || ''
 const feedbackLoading = ref(false)
 
 // 报告 DOM 引用（截图用）
@@ -138,7 +141,7 @@ async function sendFeedback(agree) {
     const res = await fetch('/api/feedback', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type: props.report.personality_type, agree }),
+      body: JSON.stringify({ type: props.report.personality_type, agree, session }),
     })
     if (!res.ok) throw new Error()
     feedbackState.value = agree ? 'like' : 'dislike'
@@ -170,7 +173,7 @@ async function sendSuggestion() {
     const res = await fetch('/api/suggest', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, session }),
     })
     if (!res.ok) throw new Error()
     suggestState.value = 'done'
@@ -282,15 +285,19 @@ async function sendSuggestion() {
       </template>
       <p v-else-if="feedbackState === 'like'" class="feedback-done">谢谢喵^^</p>
       <p v-else class="feedback-done">对不起喵……QAQ</p>
+    </section>
 
+    <!-- 7. 建议：开放题，和小猫说（2026-08-20 从反馈模块拆出独立模块） -->
+    <section class="suggest-box">
+      <p class="feedback-title">还有什么想对小猫说的？</p>
       <template v-if="!suggestState">
         <textarea
           v-model="suggestText"
           class="suggest-input"
-          placeholder="还有什么想对我们说的？功能建议、bug、吐槽都行（选填）"
+          placeholder="功能建议、bug、吐槽都行"
           maxlength="500"
         ></textarea>
-        <button class="feedback-btn" :disabled="suggestLoading || !suggestText.trim()" @click="sendSuggestion">提交建议</button>
+        <button class="feedback-btn" :disabled="suggestLoading || !suggestText.trim()" @click="sendSuggestion">告诉小猫</button>
         <p v-if="suggestError" class="feedback-done">{{ suggestError }}</p>
       </template>
       <p v-else class="feedback-done">建议已收到，谢谢^^</p>

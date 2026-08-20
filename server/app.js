@@ -156,6 +156,8 @@ app.post('/api/analyze', async (req, res) => {
     // （低温=刻板但稳，避免空理由用户拿到"骰子判型"）；理由写满则放开文采与多样性
     const filled = answers.filter((a) => a.reason && a.reason.trim()).length
     const temperature = Math.round((0.3 + 0.6 * (filled / answers.length)) * 100) / 100
+    // 会话号（前端每次提交生成）：反馈/建议凭它挂到这张测试票上（后台流水三合一）
+    const session = typeof req.body?.session === 'string' ? req.body.session.trim().slice(0, 40) : ''
 
     // 选项账本由代码算好（确定性），AI 按 prompt 第 3 章的三区裁决使用，不自己重算
     const ledger = ledgerSummary(QUESTIONS, answers)
@@ -189,7 +191,7 @@ app.post('/api/analyze', async (req, res) => {
     // 埋点记账：只记成功出报告的测试，只记数字（次数/类型/理由填写情况）。
     // 记账失败绝不能拦着报告——用户没做错任何事，悄悄记日志即可。
     try {
-      await recordTest({ type: report.personality_type, filled, total: answers.length })
+      await recordTest({ type: report.personality_type, filled, total: answers.length, session })
     } catch (err) {
       console.error('统计记账失败：', err.message)
     }
@@ -207,8 +209,10 @@ app.post('/api/feedback', async (req, res) => {
   if (typeof type !== 'string' || type.length === 0 || typeof agree !== 'boolean') {
     return res.status(400).json({ error: '反馈格式不对' })
   }
+  // 会话号：反馈挂到对应测试票上（后台流水三合一）
+  const session = typeof req.body?.session === 'string' ? req.body.session.trim().slice(0, 40) : ''
   try {
-    await recordFeedback({ agree })
+    await recordFeedback({ agree, session })
     res.json({ ok: true })
   } catch (err) {
     console.error('反馈记账失败：', err.message)
@@ -221,8 +225,10 @@ app.post('/api/feedback', async (req, res) => {
 app.post('/api/suggest', async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.trim().slice(0, 500) : ''
   if (!text) return res.status(400).json({ error: '建议内容不能为空' })
+  // 会话号：建议挂到对应测试票上（后台流水三合一）
+  const session = typeof req.body?.session === 'string' ? req.body.session.trim().slice(0, 40) : ''
   try {
-    await recordSuggestion({ text })
+    await recordSuggestion({ text, session })
     res.json({ ok: true })
   } catch (err) {
     console.error('建议记账失败：', err.message)

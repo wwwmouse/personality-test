@@ -14,6 +14,26 @@ const sortedTypes = computed(() =>
 )
 const maxCount = computed(() => (sortedTypes.value.length ? sortedTypes.value[0][1] : 1))
 
+// 流水三合一：按会话号把 测试/反馈/建议 三张票合并成一行（老票没有会话号，各自成行）
+const groupedEvents = computed(() => {
+  const rows = []
+  const index = new Map()
+  for (const e of stats.value?.events || []) {
+    const key = e.session || `${e.type}-${e.ts}`
+    let row = index.get(key)
+    if (!row) {
+      row = { ts: e.ts, test: null, feedback: null, suggest: null }
+      index.set(key, row)
+      rows.push(row)
+    }
+    if (e.type === 'test') row.test = e
+    else if (e.type === 'feedback') row.feedback = e
+    else if (e.type === 'suggest') row.suggest = e
+    row.ts = Math.max(row.ts, e.ts)
+  }
+  return rows.sort((a, b) => b.ts - a.ts)
+})
+
 // 把票据时间戳格式化成 "MM-DD HH:mm:ss"
 function formatTime(ts) {
   const d = new Date(ts)
@@ -112,14 +132,17 @@ onUnmounted(() => clearInterval(autoTimer))
         <h3>实时流水 <span class="events-count">最近 {{ stats.events?.length || 0 }} 条</span></h3>
         <div v-if="!stats.events?.length" class="stats-empty">还没有记录</div>
         <ul v-else class="events-list">
-          <li v-for="(e, i) in stats.events" :key="i" class="event-row">
-            <span class="event-time">{{ formatTime(e.ts) }}</span>
-            <span v-if="e.type === 'test'" class="event-tag event-test">测试</span>
-            <span v-else-if="e.type === 'suggest'" class="event-tag event-suggest">建议</span>
-            <span v-else class="event-tag event-feedback">反馈</span>
-            <span v-if="e.type === 'test'" class="event-detail">{{ e.personality_type }} · 理由 {{ e.reasonFilled }}/{{ e.reasonTotal }}</span>
-            <span v-else-if="e.type === 'suggest'" class="event-detail">{{ e.text }}</span>
-            <span v-else class="event-detail">{{ e.agree ? '👍 喜欢' : '👎 不喜欢' }}</span>
+          <li v-for="(row, i) in groupedEvents" :key="i" class="event-block">
+            <div class="event-row">
+              <span class="event-time">{{ formatTime(row.ts) }}</span>
+              <template v-if="row.test">
+                <span class="event-tag event-test">测试</span>
+                <span class="event-detail">{{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}</span>
+              </template>
+              <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '👍 满意' : '👎 不满意' }}</span>
+              <span v-if="row.suggest" class="event-tag event-suggest">建议</span>
+            </div>
+            <p v-if="row.suggest" class="event-suggest-text">{{ row.suggest.text }}</p>
           </li>
         </ul>
       </div>
@@ -185,6 +208,25 @@ onUnmounted(() => clearInterval(autoTimer))
   padding: 8px 0;
   border-bottom: 1px solid rgba(148, 163, 184, 0.15);
   font-size: 0.9rem;
+}
+
+/* 三合一块：边框移到块上，主行不再自带下划线；建议文字独占一行 */
+.event-block {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.event-block .event-row {
+  border-bottom: none;
+  padding-bottom: 4px;
+}
+
+.event-suggest-text {
+  margin: 0 0 6px;
+  padding-left: 4px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  word-break: break-all;
 }
 
 .event-time {
