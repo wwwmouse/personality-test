@@ -159,7 +159,7 @@ app.post('/api/analyze', async (req, res) => {
     // 会话号（前端每次提交生成）：反馈/建议凭它挂到这张测试票上（后台流水三合一）
     const session = typeof req.body?.session === 'string' ? req.body.session.trim().slice(0, 40) : ''
 
-    // 选项账本由代码算好（确定性），AI 按 prompt 第 3 章的三区裁决使用，不自己重算
+    // 选项账本由代码算好（确定性），AI 按 prompt 第 3 章的判型规则使用，不自己重算
     const ledger = ledgerSummary(QUESTIONS, answers)
     const baseMessages = [
       { role: 'system', content: SYSTEM_PROMPT },          // 工作手册
