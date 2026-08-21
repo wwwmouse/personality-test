@@ -396,13 +396,16 @@ body {
   animation: score-glow 2.2s ease-in-out infinite;
 }
 
-/* 金句 = 报告的刀尖：放大 + 加粗 + 渐变高光 + 居中（2026-08-20 用户点名升级） */
+/* 金句 = 报告的刀尖：放大 + 加粗 + 渐变高光 + 居中（2026-08-20 用户点名升级）
+   text-wrap: balance —— 手机上两行躲不掉（20~30 字 × 20px > 屏宽），让两行断均匀、
+   不再"第二行吊一个字"（2026-08-21；旧浏览器不认就回退普通断行，零风险） */
 .punchline {
   font-size: 20px;
   font-weight: 800;
   line-height: 1.7;
   margin: 0 0 12px;
   text-align: center;
+  text-wrap: balance;
   background: linear-gradient(100deg, #4ecdc4, #38bdf8 50%, #a78bfa);
   -webkit-background-clip: text;
   background-clip: text;

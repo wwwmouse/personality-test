@@ -10,7 +10,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import questionsData from '../frontend/src/data/questions.json' with { type: 'json' }
 import { readStats, readEvents, recordTest, recordFeedback, recordSuggestion } from './stats-store.js'
-import { loadQuestions, ledgerSummary } from './scorer.mjs'
+import { loadQuestions, ledgerSummary, TYPE_STACKS } from './scorer.mjs'
 
 const app = express()
 
@@ -31,25 +31,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' })
 })
 
-// 毕比模型 16 型阳面栈（英雄→阿尼玛）。确定性内容代码管，不交给 AI 记
-const TYPE_STACKS = {
-  INTP: ['Ti', 'Ne', 'Si', 'Fe'],
-  ENTP: ['Ne', 'Ti', 'Fe', 'Si'],
-  INTJ: ['Ni', 'Te', 'Fi', 'Se'],
-  ENTJ: ['Te', 'Ni', 'Se', 'Fi'],
-  INFP: ['Fi', 'Ne', 'Si', 'Te'],
-  ENFP: ['Ne', 'Fi', 'Te', 'Si'],
-  INFJ: ['Ni', 'Fe', 'Ti', 'Se'],
-  ENFJ: ['Fe', 'Ni', 'Se', 'Ti'],
-  ISTP: ['Ti', 'Se', 'Ni', 'Fe'],
-  ESTP: ['Se', 'Ti', 'Fe', 'Ni'],
-  ISFP: ['Fi', 'Se', 'Ni', 'Te'],
-  ESFP: ['Se', 'Fi', 'Te', 'Ni'],
-  ISTJ: ['Si', 'Te', 'Fi', 'Ne'],
-  ESTJ: ['Te', 'Si', 'Ne', 'Fi'],
-  ISFJ: ['Si', 'Fe', 'Ti', 'Ne'],
-  ESFJ: ['Fe', 'Si', 'Ne', 'Ti'],
-}
+// TYPE_STACKS 已挪进 scorer.mjs（判型公式与栈表单源），这里只导入使用
 
 // 验货：按 prompt.md 第 4 章的合同逐项检查 AI 输出。
 // DeepSeek 暂不支持 json_schema 强约束，所以后端自己当质检员。
@@ -100,41 +82,62 @@ function validateReport(r) {
 }
 
 // 打一次电话给 DeepSeek。返回 { report } 或 { error }
+// 限流与瞬时故障自动重试：429 / 5xx / 网络错误最多再试 2 次（1 秒、2 秒退避）；
+//   401/402/400 这类"重试也没用"的错误不重试，直接翻译成人话返回。
+//   重试是安全的——判型分析是幂等操作，重发不会多记一笔账（记账在拿到合格报告之后）。
 async function callDeepSeek(messages, temperature) {
   const apiKey = process.env.DEEPSEEK_API_KEY
-  const aiResponse = await fetch('https://api.deepseek.com/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'deepseek-chat',
-      messages,
-      temperature,                                 // 0=刻板 1=跳脱，数值由理由填写率决定（见 /api/analyze）
-      response_format: { type: 'json_object' },    // 让 AI 只吐 JSON，方便解析
-    }),
-    signal: AbortSignal.timeout(120_000),          // 120 秒没回就放弃
-  })
-
-  // AI 服务端出问题：把状态码翻译成人话，而不是甩给用户一串数字
-  if (!aiResponse.ok) {
-    const errText = await aiResponse.text()
-    const hints = {
-      401: 'API key 无效（本地检查 server/.env，线上检查 Vercel 后台的环境变量）',
-      402: 'DeepSeek 账户余额不足，去开放平台充值',
-      429: '请求太频繁，稍等几秒再试',
+  const hints = {
+    401: 'API key 无效（本地检查 server/.env，线上检查 Vercel 后台的环境变量）',
+    402: 'DeepSeek 账户余额不足，去开放平台充值',
+    429: '请求太频繁，稍等几秒再试',
+  }
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    let aiResponse
+    try {
+      aiResponse = await fetch('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages,
+          temperature,                                 // 0=刻板 1=跳脱，数值由理由填写率决定（见 /api/analyze）
+          response_format: { type: 'json_object' },    // 让 AI 只吐 JSON，方便解析
+        }),
+        signal: AbortSignal.timeout(120_000),          // 120 秒没回就放弃
+      })
+    } catch (err) {
+      // 网络断/超时：重试预算内再试，耗尽按 5xx 一档处理
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, attempt * 1000))
+        continue
+      }
+      return { error: `连接 DeepSeek 失败：${err.message}` }
     }
-    const friendly = hints[aiResponse.status] || `DeepSeek 出错了（${aiResponse.status}）：${errText.slice(0, 200)}`
-    return { error: friendly }
-  }
 
-  const data = await aiResponse.json()
-  try {
-    return { report: JSON.parse(data.choices[0].message.content) }
-  } catch {
-    return { error: 'AI 返回的不是合法 JSON' }
+    // AI 服务端出问题：把状态码翻译成人话，而不是甩给用户一串数字
+    if (!aiResponse.ok) {
+      const status = aiResponse.status
+      if ((status === 429 || status >= 500) && attempt < 3) {
+        await new Promise((r) => setTimeout(r, attempt * 1000))
+        continue
+      }
+      const errText = await aiResponse.text()
+      const friendly = hints[status] || `DeepSeek 出错了（${status}）：${errText.slice(0, 200)}`
+      return { error: friendly }
+    }
+
+    const data = await aiResponse.json()
+    try {
+      return { report: JSON.parse(data.choices[0].message.content) }
+    } catch {
+      return { error: 'AI 返回的不是合法 JSON' }
+    }
   }
+  return { error: 'DeepSeek 暂时不稳定（连续多次失败），请稍后再试' }
 }
 
 // 分析接口：前端把答案发到这里，这里负责跟 DeepSeek 对话
@@ -191,7 +194,7 @@ app.post('/api/analyze', async (req, res) => {
     // 埋点记账：只记成功出报告的测试，只记数字（次数/类型/理由填写情况）。
     // 记账失败绝不能拦着报告——用户没做错任何事，悄悄记日志即可。
     try {
-      await recordTest({ type: report.personality_type, filled, total: answers.length, session })
+      await recordTest({ type: report.personality_type, filled, total: answers.length, session, margin: ledger.gap })
     } catch (err) {
       console.error('统计记账失败：', err.message)
     }

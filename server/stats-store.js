@@ -5,7 +5,7 @@
 //      Redis 的 INCR 是"原子加一"——两个人同时记账也是排队执行，绝不互相覆盖
 //      （旧 Blob 账本是"读旧账→+1→写回"三步，两人撞车就丢一笔，这是 2026-08-18
 //      正式统计期丢数据的元凶）。每笔测试还会往明细列表里推一张"票据"
-//      （时间+判型+理由数），丢了账也能凭票对账。
+//      （时间+判型+理由数+分差），丢了账也能凭票对账。
 //   2. 本地票据目录 server/.stats-events/：本地开发没配 Redis 时用。
 //      每笔测试写一张独立小票（各写各的，同样没有互相覆盖的问题），读账时把票加总。
 // 对外返回的结构不变（totalTests/types/reasonFilled/reasonTotal/feedback），前端无感。
@@ -91,13 +91,15 @@ function readLocalTickets() {
 // ---- 记账接口（两个仓库共用同一套入口） ----
 
 // 每笔测试记一笔：聚合数字 +1，明细列表推一张票（会话号：反馈/建议凭它挂靠，流水三合一）
-async function recordTest({ type, filled, total, session }) {
+// margin = 选项账本前两名分差（派生数字，非原文）：观察真实用户平手区占比的数据源
+async function recordTest({ type, filled, total, session, margin }) {
   const ticket = {
     ts: Date.now(),
     type: 'test',
     personality_type: type,
     reasonFilled: filled,
     reasonTotal: total,
+    margin: margin ?? null,
     session: session || '',
   }
   if (storageMode() === 'redis') {
