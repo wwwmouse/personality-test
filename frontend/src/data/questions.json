@@ -7,7 +7,7 @@
     "reason_prompt": "为什么想这样开始？（必填）",
     "options": [
       { "key": "A", "text": "打开备忘录，把想做了很久的事按优先级排成清单，准备好好完成", "function": "Te", "weight": 0.8 },
-      { "key": "B", "text": "先躺着歇会，花点时间想清楚“自己有没有想做的事”，想通了后再决定", "function": "Ti", "weight": 0.7 },
+      { "key": "B", "text": "先躺着歇会，思考一下有没有想做的事，然后再做决定", "function": "Ti", "weight": 0.7 },
       { "key": "C", "text": "在群里问朋友有没有安排，好不容易闲下来，独自待着太浪费了", "function": "Fe", "weight": 0.8 },
       { "key": "D", "text": "自由时间？肯定早就和朋友约好了，出去玩", "function": "Se", "weight": 0.8 }
     ]
@@ -46,7 +46,7 @@
       { "key": "A", "text": "锁定预算，横向对比几款参数，性价比最高的直接拿下", "function": "Te", "weight": 0.8 },
       { "key": "B", "text": "问问身边买过的人或朋友，参考大家的意见再综合决定", "function": "Fe", "weight": 0.8 },
       { "key": "C", "text": "到店里看一眼、试一下，感觉对上了就买，说不上具体原因", "function": "Fi", "weight": 0.7 },
-      { "key": "D", "text": "先弄懂每款配置背后的原理和口碑，用自己的判断标准权衡", "function": "Ti", "weight": 0.7 }
+      { "key": "D", "text": "尝试弄懂每款配置背后的关键因素，用自己的判断标准权衡", "function": "Ti", "weight": 0.7 }
     ]
   },
   {
@@ -57,7 +57,7 @@
     "options": [
       { "key": "A", "text": "把卡住的问题拆成几块，先单独解决最容易的那一块", "function": "Ti", "weight": 0.7 },
       { "key": "B", "text": "泡杯茶死磕，等脑子里“咔哒”一声想通的那一刻", "function": "Ni", "weight": 0.7 },
-      { "key": "C", "text": "去搜类似案例，看别人是怎么解决同类问题的", "function": "Si", "weight": 0.7 },
+      { "key": "C", "text": "回想以前面对同类问题时是怎么解决的，用当时管用的办法再试一次", "function": "Si", "weight": 0.7 },
       { "key": "D", "text": "先出去玩半天，把问题交给回来后的自己", "function": "Se", "weight": 0.8 }
     ]
   },
@@ -70,7 +70,7 @@
       { "key": "A", "text": "准备什么的最无聊了，到了再说，玩到哪算哪", "function": "Se", "weight": 0.8 },
       { "key": "B", "text": "幻想在陌生城市可能会遇到的情况，隐隐期待未来", "function": "Ne", "weight": 0.8 },
       { "key": "C", "text": "翻出上次旅行的行李清单和记账表，照老规矩打包装备", "function": "Si", "weight": 0.7 },
-      { "key": "D", "text": "查这座城市最值得去的地方，想清楚旅行目的再定行程", "function": "Ni", "weight": 0.7 }
+      { "key": "D", "text": "在脑子里把这座城市勾勒成画面，想清楚这趟旅行的终极目标", "function": "Ni", "weight": 0.7 }
     ]
   },
   {
@@ -80,8 +80,8 @@
     "reason_prompt": "照片让你想起了什么？",
     "options": [
       { "key": "A", "text": "哇，当时那家餐厅的味道、那天的阳光角度、空气里的味道都涌回来了", "function": "Si", "weight": 0.7 },
-      { "key": "B", "text": "有点想旧地重游——哪天有空，一定要再回去看看", "function": "Se", "weight": 0.8 },
-      { "key": "C", "text": "照片里的我，有些东西从没变过——我还是当初那个我", "function": "Fi", "weight": 0.7 },
+      { "key": "B", "text": "看完就放下——立刻约朋友出门逛逛，趁现在有空，玩点新的", "function": "Se", "weight": 0.8 },
+      { "key": "C", "text": "照片里的我，有些东西从没变过——喜欢什么、坚持什么，到现在还是老样子", "function": "Fi", "weight": 0.7 },
       { "key": "D", "text": "如果当时做了另一个选择，现在会在哪里、做什么呢？", "function": "Ne", "weight": 0.8 }
     ]
   },
@@ -103,9 +103,9 @@
     "text": "如果钱和时间都不是问题，你理想的假期最接近的是？",
     "reason_prompt": "什么样的假期才算值得？",
     "options": [
-      { "key": "A", "text": "去一个自己向往了很久的地方，送自己一场舒适的旅行", "function": "Fi", "weight": 0.7 },
+      { "key": "A", "text": "找个舒服的地方，纯粹按自己的心情休息——这趟旅行只为自己", "function": "Fi", "weight": 0.7 },
       { "key": "B", "text": "回小时候住过的地方，走一遍老街老巷，见见老朋友", "function": "Si", "weight": 0.7 },
-      { "key": "C", "text": "探索某段文化/历史的脉络，感受完整的精神洗涤", "function": "Ni", "weight": 0.7 },
+      { "key": "C", "text": "去一个在心里描画过无数次的地方，亲眼看看它到底是不是想象中的样子", "function": "Ni", "weight": 0.7 },
       { "key": "D", "text": "报个精品小团，把热门景点高效打卡，不留遗憾", "function": "Te", "weight": 0.8 }
     ]
   },
@@ -141,7 +141,7 @@
     "options": [
       { "key": "A", "text": "当场追问对方否定的理由，一条条核对逻辑", "function": "Ti", "weight": 0.7 },
       { "key": "B", "text": "散会后立刻动手改方案，先解决对方指出的问题", "function": "Te", "weight": 0.8 },
-      { "key": "C", "text": "表面上没说什么，但心里很不舒服，回去会找人吐槽", "function": "Fi", "weight": 0.7 },
+      { "key": "C", "text": "表面上没说什么，但心里堵得慌，需要一个人安静地消化一会儿", "function": "Fi", "weight": 0.7 },
       { "key": "D", "text": "打个圆场让气氛别太僵，事后想办法让方案被接受", "function": "Fe", "weight": 0.8 }
     ]
   },
@@ -164,7 +164,7 @@
     "reason_prompt": "低谷里，什么最能把你拉起来？",
     "options": [
       { "key": "A", "text": "列一个“能做的事”清单，把未来能控制的部分先抓起来执行", "function": "Te", "weight": 0.8 },
-      { "key": "B", "text": "一个人待着，把这一周的事从头捋一遍，想弄明白不顺到底出在哪", "function": "Ni", "weight": 0.7 },
+      { "key": "B", "text": "一个人待着，把这一周的事在脑子里慢慢过一遍，直到看清最根本的原因", "function": "Ni", "weight": 0.7 },
       { "key": "C", "text": "找信任的人聊一聊，或者至少让自己待在有人气的地方", "function": "Fe", "weight": 0.8 },
       { "key": "D", "text": "按自己的心意做点喜欢的事，让状态慢慢缓回来", "function": "Fi", "weight": 0.7 }
     ]
@@ -189,7 +189,7 @@
     "options": [
       { "key": "A", "text": "投给同事，因为人情和团队和谐更重要", "function": "Fe", "weight": 0.8 },
       { "key": "B", "text": "不投给ta——违背自己的原则，人情再大也得先对得起自己的标准", "function": "Fi", "weight": 0.7 },
-      { "key": "C", "text": "不急着投：先把ta的数据一项项过一遍，弄清楚差在哪、规则有没有漏洞，再决定", "function": "Ti", "weight": 0.7 },
+      { "key": "C", "text": "不急着投：在心里把数据和规则对一遍，再凭自己的判断决定", "function": "Ti", "weight": 0.7 },
       { "key": "D", "text": "不投。按规则和数据办事，这个口子一开，以后标准就没人当回事了", "function": "Te", "weight": 0.8 }
     ]
   },
@@ -213,7 +213,7 @@
     "options": [
       { "key": "A", "text": "张罗起来：问大家想吃什么、什么时间方便，把每个人都照顾到", "function": "Fe", "weight": 0.8 },
       { "key": "B", "text": "提议去上次大家都说好的那家店，口味熟悉、不会踩雷", "function": "Si", "weight": 0.7 },
-      { "key": "C", "text": "把时间、地点、预算和忌口等确定清楚，给一个最合理的方案", "function": "Ti", "weight": 0.7 },
+      { "key": "C", "text": "在脑子里把各种因素理清楚——距离、口味、价位等，计算出心中的最优选择", "function": "Ti", "weight": 0.7 },
       { "key": "D", "text": "提议去试试刚开的新店，说不定有惊喜，正好换换口味", "function": "Ne", "weight": 0.8 }
     ]
   },
@@ -232,12 +232,12 @@
   {
     "id": "q20",
     "zone": "light",
-    "text": "场景：接到了一个对未来发展很重要的长期项目，你的思维惯常会偏向？",
+    "text": "场景：接到了一个对未来发展很重要的长期项目，你的第一反应是？",
     "reason_prompt": "此刻这个项目在你脑子里是什么形状？",
     "options": [
       { "key": "A", "text": "涌现出很多发展的方向和未知的情况，好奇项目未来的可能性", "function": "Ne", "weight": 0.8 },
-      { "key": "B", "text": "反复思考一个最核心的思想，提炼出一个唯一明确的主旨", "function": "Ni", "weight": 0.7 },
-      { "key": "C", "text": "拆解同类项目是怎么搭起来的，一层层弄明白背后的原理", "function": "Ti", "weight": 0.7 },
+      { "key": "B", "text": "先把项目在脑子里浓缩成一个整体，想清楚它最终要抵达的样子", "function": "Ni", "weight": 0.7 },
+      { "key": "C", "text": "把项目拆开详细分析：由哪些部分组成、每块为什么这样设计、底层逻辑是什么，一层层想明白", "function": "Ti", "weight": 0.7 },
       { "key": "D", "text": "确认项目背后的内核是否认可——值不值自己全力付出", "function": "Fi", "weight": 0.7 }
     ]
   }
