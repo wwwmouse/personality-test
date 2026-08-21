@@ -10,7 +10,7 @@
 
 | 版本线 | 当前 | 标注位置 |
 |---|---|---|
-| 项目 | **v0.4.0** | `package.json` |
+| 项目 | **v1.0.0** | `package.json` |
 | 题库（题目） | **v3.1** | `docs/type-eval.md` 成绩单（沿革见 git 提交记录） |
 | 报告结构 | **v2.3** | `docs/product-spec.md` 第 4 节 |
 | Prompt（工作手册） | **v2.7** | `docs/prompt.md` 标题 |
