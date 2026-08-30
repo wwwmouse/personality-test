@@ -95,6 +95,72 @@
 
 **这条流水线的形状**：前端只负责"收数"和"展数"，中间所有"AI 的事"都在后端完成。AI 应用的请求都是这个形状——收数据 → 调 AI → 验货 → 记账 → 展示。
 
+### 2.1 数据变身的视角：一次请求的 9 个交接点（衔接的钥匙）
+
+> 上面 17 步讲的是"每一步发生了什么"，这一节换一个角度：**数据在每一步变成了什么形态**。
+> 理解"衔接"只需要一把钥匙：**机器内是"对象"，跨机器是"JSON 文本"**。
+> HTTP 只能传文本（本质是字节流），对象是内存里的结构体，塞不进去——所以每次跨机器（前端↔后端、后端↔AI），数据都要"变身"两次：压成 JSON 文本发出去，收到再解析回对象。
+> 整个项目只有 4 种动作：函数调用（机器内）、HTTP 请求/响应（跨机器）、跨文件调用（机器内，如 app.js 喊 scorer.mjs）。
+
+**9 个交接点（以 POST /api/analyze 为例）：**
+
+| # | 交接点 | 数据形态变化 | 落点 |
+|---|---|---|---|
+| 0 | 前端内存：答完 20 题 | 对象（answers：每题 id/题干/选项/理由） | `App.vue` → `buildPayload()` |
+| 1 | 前端→后端 | 对象 → JSON 文本（HTTP 请求体） | `App.vue` → `fetch('/api/analyze')` |
+| 2 | 后端收到 | JSON 文本 → 对象（req.body） | `app.js` → `express.json()` |
+| 3 | 后端算账本 | 对象（题库+答案）→ 对象（账本） | `app.js` → `scorer.mjs` → `ledgerSummary()` |
+| 4 | 后端→AI | 对象 → JSON 文本 → HTTP → JSON 文本 → 对象（报告） | `app.js` → `callDeepSeek()`（内部 fetch DeepSeek） |
+| 5 | 后端验货 | 对象（报告）→ 校验结果 | `app.js` → `validateReport()` |
+| 6 | 后端记账 | 对象（数字）→ 本地票据 / KV | `app.js` → `stats-store.js` → `recordTest()` |
+| 7 | 后端→前端 | 对象 → JSON 文本（HTTP 响应体） | `app.js` → `res.json(report)` |
+| 8 | 前端渲染 | JSON 文本 → 对象 → 屏幕 | `App.vue` → `ReportView.vue` |
+
+**一句话**：对象 → 文本 → 对象 →（算）→ 对象 → 文本 → 对象 → 屏幕。项目里没有魔法，只有这个循环。
+
+**真实数据案例（docs/test-input.json，线上实跑一次）**：选项账本算出 `gap=0.4 → zone=tie → derived_type=ENTP`（选项信号不足，代码"没把握"）；AI 读完理由（Ti 味很重：q12 一条条核对逻辑、q16 坚持原则不妥协、q18 给最合理方案）后，最终判 **INTP**——**"平手区理由定主辅"在生产环境的真实运行**：账本给默认值，AI 拿理由做最终裁决。
+
+### 2.2 一张图看全流程（主链路版）
+
+```mermaid
+flowchart TD
+    A["App.vue · handleSubmit()<br/>打包 20 题答案（对象）"]
+    B["入口：server.js（本地）/ api/analyze.js（线上）"]
+    C["app.js · express.json()<br/>JSON 文本 → 对象（req.body）"]
+    D["app.js · /api/analyze 处理函数<br/>两道防线 + 算温度 + 拼消息"]
+    E["scorer.mjs · ledgerSummary()<br/>选项 → 八维分 → 账本对象"]
+    F["app.js · callDeepSeek()<br/>调 DeepSeek 生成报告"]
+    G["DeepSeek API<br/>读理由 + 账本 → 报告 JSON"]
+    H["app.js · validateReport()<br/>验货（不合格退回重写 ≤3 次）"]
+    I["stats-store.js · recordTest()<br/>写本地票据 / KV"]
+    J["App.vue · 接收 res.json()<br/>JSON 文本 → 对象"]
+    K["ReportView.vue<br/>渲染 → 屏幕"]
+
+    A -->|"①HTTP请求<br/>对象→JSON文本"| B
+    B --> C
+    C --> D
+    D -->|"③函数调用<br/>ledgerSummary(题库,答案)"| E
+    E -->|"返回账本对象"| D
+    D -->|"③函数调用<br/>callDeepSeek(messages)"| F
+    F -->|"①HTTP请求<br/>对象→JSON文本"| G
+    G -->|"②HTTP响应<br/>JSON文本→对象"| F
+    F --> H
+    H -->|"通过"| I
+    H -.->|"不合格→退回重写（≤3次）"| D
+    I -->|"②HTTP响应<br/>res.json 对象→JSON文本"| J
+    J --> K
+```
+
+**图例（三种"手段"就是全项目所有的衔接方式）：**
+
+| 手段 | 是什么 | 数据形态 |
+|---|---|---|
+| ① HTTP 请求 | 前端→后端、后端→AI（fetch） | 对象 → JSON 文本 |
+| ② HTTP 响应 | AI→后端、后端→前端（res.json） | JSON 文本 → 对象 |
+| ③ 函数调用 / 跨文件调用 | 后端内部（app.js 喊 scorer.mjs / stats-store.js） | 对象直接传 |
+
+**读图顺序**：从左上角 A 出发，顺着箭头走到 K——每条边要么是 ①/②（跨机器，数据变身），要么是 ③（机器内，直接传对象）。虚线是"验货失败→退回重写"的循环，最多 3 次。想确认自己读懂了，合上文档默画这张图。
+
 ---
 
 ## 3. 模块解剖

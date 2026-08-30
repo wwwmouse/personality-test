@@ -4,6 +4,17 @@
 //   - 线上部署：Vercel 用根目录 api/analyze.js 叫醒它
 // 拆开的目的：同一份逻辑，本地和线上共用，不各写一套
 // v2.1：输出按"合同"验货，不合格就退货让 AI 重写（最多 3 次）
+//
+// ============================================================
+// 【阅读导航】这个文件不是从上到下"执行"的，而是"启动时登记 + 来请求才干活"。
+// 按"一次 /api/analyze 请求的处理顺序"理解，分三段读：
+//   ┌ ① 启动段：import、创建 app、装中间件(express.json)、读菜谱(prompt.md)、读题库
+//   ├ ② 工具箱段：validateReport(验货) + callDeepSeek(调 AI)
+//   │    这两个函数只是"定义"（写在纸上备用），此刻不执行，被 ③ 的路由按需调用
+//   └ ③ 路由段：5 扇门(接口)。主门 POST /api/analyze 的"处理顺序"
+//        = 它函数体内语句从上到下的顺序：
+//        拿答案 → 两道防线 → 算温度 → 算账本 → 拼消息 → 循环{调AI→验货} → 记账 → 回报告
+// ============================================================
 
 import express from 'express'
 import fs from 'node:fs'
@@ -25,11 +36,6 @@ const SYSTEM_PROMPT = fs.readFileSync(promptPath, 'utf8')
 // 必须用静态 import 而不是 fs.readFileSync——Vercel 的 nft 打包只认静态依赖，
 // 运行时读的文件不在"行李清单"里，线上函数会因找不到文件整店崩溃（2026-08-20 实战踩坑）。
 const QUESTIONS = loadQuestions(questionsData)
-
-// 健康检查接口
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' })
-})
 
 // TYPE_STACKS 已挪进 scorer.mjs（判型公式与栈表单源），这里只导入使用
 
@@ -258,6 +264,11 @@ app.get('/api/stats', async (req, res) => {
   } catch (err) {
     res.status(502).json({ error: `读取账本失败：${err.message}` })
   }
+})
+
+// 健康检查接口（放最后：5 扇门里最不重要，先读主门 /api/analyze 再看它）
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok' })
 })
 
 export default app
