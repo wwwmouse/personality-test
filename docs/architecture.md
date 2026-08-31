@@ -71,56 +71,89 @@
 
 ## 2. 一条请求的生命：从点按钮到看到报告
 
-每一步都落到真实的文件/函数，方便你对着源码看。
+> 本节是"三件套"，按顺序读，各管一件事：
+> ① **2.0 路由登记**——门是怎么挂上去的（先搞懂 `app.get` / `app.post` 是什么）
+> ② **2.1 一张图看全流程**——旅程全貌 + 数据变身钥匙 + 真实案例（讲给别人听，用这张）
+> ③ **2.2 17 步对照表**——每一步的详细落点（对着源码查漏用）
 
-| 步 | 发生了什么 | 落点 |
+### 2.0 路由登记：5 扇门是怎么挂上去的
+
+**`app.get` / `app.post` 是什么**：它们是**登记动作**。`app.post('/api/analyze', 处理函数)` 的意思是——"在 Express 的登记本上写一笔：将来有人敲门牌号 `/api/analyze`（且方法是 POST），就调用这个处理函数"。**登记不等于执行**：处理函数此刻只是"写在纸上备用"，请求来了才被调用。
+
+**这类写法叫什么**（Web 后端术语，见到不慌）：
+
+| 术语 | 白话 | 对应谁 |
 |---|---|---|
-| 1 | 用户点"开始测试"，舞台从封面切到答题页 | `App.vue`：`phase = 'answering'` |
-| 2 | 20 道题依次渲染（题目长什么样、几个选项、占位文案，全来自数据文件） | `App.vue` 的 `v-for` + `data/questions.json` → `QuestionItem.vue` |
-| 3 | 用户点选 + 写理由，答案实时存进容器对象 | `App.vue`：`answers = { q1: {choice, reason}, ... }` |
-| 4 | 点"生成我的报告" → 两道前端检查：20 题都选了？核心题（q1/q2）理由填了？ | `App.vue`：`handleSubmit()` |
-| 5 | 检查通过 → 画面切"分析中"：小猫踱步/眨眼 + 假进度条（渐近爬升压 94%）+ 4 句文案每 4 秒轮播 | `App.vue`：`phase = 'analyzing'` + `analyzingLines` + `analyzeProgress` |
-| 6 | 答案被打包成 AI 认识的格式：题号 + 题干 + 选项字母 + 选项全文 + 理由 | `App.vue`：`buildPayload()`（格式对照 `docs/prompt.md` 第 2 章） |
-| 7 | `fetch('/api/analyze')` 发出 | 线上：`vercel.json` 把 /api 指给 `api/analyze.js`；本地开发：`vite.config.js` 代理转交 3001 |
-| 8 | 后端两道防线：① 答案是不是数组 ② key 在不在 | `app.js` 的 `/api/analyze`：400 / 500 |
-| 9 | 打电话给 DeepSeek：system = prompt.md 全文（后端启动时就读好了），user = 答案 JSON + 选项账本（scorer.mjs 现算） | `app.js`：`callDeepSeek()`（deepseek-chat、temperature 随理由填写率 0.3~0.9、要求只吐 JSON、120 秒超时） |
-| 10 | DeepSeek 交卷 → 后端"验货"：字段齐不齐、评分在不在 0~100、数组长度对不对 | `app.js`：`validateReport()`（对照 prompt.md 第 4 章合同） |
-| 11 | 不合格？把 AI 上次的输出连同"差评"一起发回去，让它重写；最多 3 次 | `app.js`：`for (let attempt = 0; attempt < 3; ...)` |
-| 12 | 3 次都不合格 → 502"AI 连续 3 次输出不符合格式要求"；AI 服务端出问题 → 状态码翻译成人话（401 key 无效 / 402 余额不足 / 429 太频繁） | `app.js`：`hints` 表 |
-| 13 | 合格 → 顺手记账：总次数 +1、该类型 +1、理由填写数累加、明细推一张票（记账失败绝不拦报告） | `app.js` → `stats-store.js`：`recordTest()` / `recordFeedback()` |
-| 14 | 报告返回前端 → 存一份进浏览器本地（回看用）→ 作废旧报告的"已反馈"戳 → 切报告页 | `App.vue`：`localStorage['last-report']`、`removeItem('feedback-done')`、`phase = 'result'` |
-| 15 | 报告页渲染：类型徽章 → 总分 → 金句 → 描述 → 四功能 → 压力篇 → 配对 → 免责 | `ReportView.vue` |
-| 16 | 用户点"满意/不满意" → 记一个数字进账本；localStorage 盖戳，一份报告一生只能点一次 | `ReportView.vue`：`sendFeedback()` → `app.js` 的 `/api/feedback` |
-| 17 | 任何一步断了 → 失败页：人话错误 + 重试 + 返回修改（答案全保留） | `App.vue`：`catch` → `phase = 'error'` |
+| 路由（route） | "门牌号 + 处理流程"的配对 | `app.post('/api/analyze', ...)` 整体 |
+| 回调函数（callback） | 先记下来、到时候再调用的函数 | 传给 app.post 的那个 `async (req, res) => {...}` |
+| 高阶函数 | 参数里带着"另一个函数"的函数 | `app.post` / `app.get` 本身（`sorted(key=fn)` 里见过同类） |
+| 控制反转（IoC） | 脚本里是你调用函数；服务器里是框架调用你的函数 | 整个"登记 → 请求来了才调用"的机制 |
 
-**这条流水线的形状**：前端只负责"收数"和"展数"，中间所有"AI 的事"都在后端完成。AI 应用的请求都是这个形状——收数据 → 调 AI → 验货 → 记账 → 展示。
+**心智模型（一句话）**：`function` 关键字写的 = 工具箱里的**工具**；`app.xxx` 写的 = 负责"记住工具、到点调用"的**调度器**。脚本里永远是你调用函数，Web 服务器里变成了函数调用你——转过这个弯，后端就通了。
 
-### 2.1 数据变身的视角：一次请求的 9 个交接点（衔接的钥匙）
+**一扇门的统一解剖图（记住这个模板，5 扇门全是它的不同"填充"）**：
 
-> 上面 17 步讲的是"每一步发生了什么"，这一节换一个角度：**数据在每一步变成了什么形态**。
-> 理解"衔接"只需要一把钥匙：**机器内是"对象"，跨机器是"JSON 文本"**。
-> HTTP 只能传文本（本质是字节流），对象是内存里的结构体，塞不进去——所以每次跨机器（前端↔后端、后端↔AI），数据都要"变身"两次：压成 JSON 文本发出去，收到再解析回对象。
-> 整个项目只有 4 种动作：函数调用（机器内）、HTTP 请求/响应（跨机器）、跨文件调用（机器内，如 app.js 喊 scorer.mjs）。
+```
+一扇门 = 三件事：
+  ① 谁敲的（敲门人）      —— 前端某个 fetch / 你的浏览器地址栏 / 外部监控脚本
+  ② 门牌号（请求目标）    —— app.xxx('/api/...', 回调) 里登记的那个 URL + 方法
+  ③ 门内流水线（回调内部）—— 检查 → 调工具函数 → 用 res 回话（处理顺序）
+```
 
-**9 个交接点（以 POST /api/analyze 为例）：**
+**请求怎么找到门（敲门 → 匹配 → 调用）**：
 
-| # | 交接点 | 数据形态变化 | 落点 |
-|---|---|---|---|
-| 0 | 前端内存：答完 20 题 | 对象（answers：每题 id/题干/选项/理由） | `App.vue` → `buildPayload()` |
-| 1 | 前端→后端 | 对象 → JSON 文本（HTTP 请求体） | `App.vue` → `fetch('/api/analyze')` |
-| 2 | 后端收到 | JSON 文本 → 对象（req.body） | `app.js` → `express.json()` |
-| 3 | 后端算账本 | 对象（题库+答案）→ 对象（账本） | `app.js` → `scorer.mjs` → `ledgerSummary()` |
-| 4 | 后端→AI | 对象 → JSON 文本 → HTTP → JSON 文本 → 对象（报告） | `app.js` → `callDeepSeek()`（内部 fetch DeepSeek） |
-| 5 | 后端验货 | 对象（报告）→ 校验结果 | `app.js` → `validateReport()` |
-| 6 | 后端记账 | 对象（数字）→ 本地票据 / KV | `app.js` → `stats-store.js` → `recordTest()` |
-| 7 | 后端→前端 | 对象 → JSON 文本（HTTP 响应体） | `app.js` → `res.json(report)` |
-| 8 | 前端渲染 | JSON 文本 → 对象 → 屏幕 | `App.vue` → `ReportView.vue` |
+```
+fetch('/api/analyze') 执行          ← 敲门（前端 App.vue 第 137 行 / 脚本 test-analyze.js 第 12 行）
+   │ ① 构造请求：方法 POST + 门牌号 /api/analyze + body=JSON
+   ▼
+Express 收到请求
+   │ ② 查登记本：方法 POST？门牌号 /api/analyze？ ✓（对不上 → 404）
+   ▼
+调用对应的处理函数
+   │ ③ Express 自动把 req（请求）和 res（响应）塞给处理函数
+   ▼
+处理函数干完 → 用 res 把结果发回浏览器（"回话"）
+```
 
-**一句话**：对象 → 文本 → 对象 →（算）→ 对象 → 文本 → 对象 → 屏幕。项目里没有魔法，只有这个循环。
+**本项目的 5 扇门一览**（都在 `server/app.js`；"谁敲"= 敲门人所在的文件与行号）：
 
-**真实数据案例（docs/test-input.json，线上实跑一次）**：选项账本算出 `gap=0.4 → zone=tie → derived_type=ENTP`（选项信号不足，代码"没把握"）；AI 读完理由（Ti 味很重：q12 一条条核对逻辑、q16 坚持原则不妥协、q18 给最合理方案）后，最终判 **INTP**——**"平手区理由定主辅"在生产环境的真实运行**：账本给默认值，AI 拿理由做最终裁决。
+| 门 | 门牌号 | 方法 | 由谁敲（位置 · 时机） | 门内调用了谁 | 干什么 |
+|---|---|---|---|---|---|
+| 1 | `/api/analyze` | POST | `App.vue` 第 137 行 · 点"生成报告" | `scorer.mjs`·`ledgerSummary` ｜ `app.js`·`callDeepSeek` / `validateReport` ｜ `stats-store.js`·`recordTest` | 出报告（主门） |
+| 2 | `/api/feedback` | POST | `ReportView.vue` 第 141 行 · 点"满意/不满意" | `stats-store.js`·`recordFeedback` | 记反馈数字 |
+| 3 | `/api/suggest` | POST | `ReportView.vue` 第 173 行 · 提交建议 | `stats-store.js`·`recordSuggestion` | 记建议文字 |
+| 4 | `/api/stats` | GET | 地址栏输 `sherrymouse.top/stats` 拿到页面后，`StatsView.vue` 第 55 行 fetch | `stats-store.js`·`readStats` + `readEvents` | 看统计（要口令） |
+| 5 | `/api/health` | GET | 外部监控 / 运维脚本（前端不敲） | 无（直接回话） | 心跳检查 |
 
-### 2.2 一张图看全流程（主链路版）
+> **一眼看穿的结构**：只有门 1 调用"业务"函数（scorer / AI 流水线），门 2~4 全是 `stats-store` 的薄包装——因为产品只有一个核心功能（出报告），其他门都是"统计后院"的记账员。门 1 自己也调 `recordTest`，所以 `stats-store.js` 是所有门的"公共后院"。
+
+**门 1 完整展开（唯一复杂的门；其他门只是它的"缩水版"）**—— app.js 第 150 行，回调内部按顺序做：
+
+1. **两道防线**：`answers` 是数组且非空？`DEEPSEEK_API_KEY` 存在？→ 不对就直接 400/500 拒绝
+2. **算温度**：数 20 题里填了几题理由 → `temperature = 0.3 + 0.6 × 填写率`（理由越少越保守，防 AI 乱猜）
+3. **算账本**：`ledgerSummary(题库, 答案)` → `scorer.mjs`：选项 → 八维分 → 账本 `{top1, top2, gap, zone, derived_type}`（对应 2.1 主图的 E 节点）
+4. **拼消息**：system = 工作手册（prompt.md）全文，user = 答案 + 账本
+5. **循环（最多 3 次）**（对应 2.1 主图的 D→F→G→F→H→D 一圈）：
+   - `callDeepSeek(messages, 温度)` → `app.js` 内部：fetch DeepSeek API（429/5xx 自动重试 2 次、120 秒超时）→ 返回 `{report}` 或 `{error}`
+   - `validateReport(报告)` → `app.js` 内部**验货**，检查：**5 个字符串字段**（类型/别称/金句/描述/免责）｜ **functions 恰好 4 项** 且 position 固定为 英雄/父母/永恒少年/阿尼玛·阿尼姆斯 ｜ **score 是 0~100 整数** ｜ **判型与功能栈自洽**（判 INTP 却写 ENTP 的栈 → 打回）｜ **under_pressure 恰好 3 项** ｜ **type_matches 恰好 2 项**（每项 4 字段）
+   - 验货不过 → 把"上次输出 + 差评"塞回 messages，让 AI 重写
+6. **3 次都没过** → 502"AI 连续 3 次不符合格式要求"
+7. **记账**：`recordTest({type, filled, total, margin})` → `stats-store.js`：写本地票据 / KV（失败只记日志，**绝不拦报告**）
+8. **回话**：`res.json(报告)` → 发回前端
+
+**门 2~5 的完整逻辑**（都是"检查 → 调一个函数 → 回话"三步，对着上表"门内调用了谁"看）：
+
+- **门 2**：检查 `type` 是字符串且非空、`agree` 是布尔 → `recordFeedback({agree, session})`（like/dislike +1，推一张票）→ `res.json({ok:true})`
+- **门 3**：取 `text` 去空格、截断到 500 字，空文本 → 400 → `recordSuggestion({text, session})`（只推一张票）→ `res.json({ok:true})`
+- **门 4**：口令校验（`STATS_KEY` 没配 → 503，`?key=` 不对 → 403）→ `readStats()` + `readEvents(50)` → `res.json({...统计, fillRate, events})`
+- **门 5**：直接 `res.json({status:'ok'})` —— 就这一句，什么都不查
+
+> ⚠️ 最容易混的一点：**`/api/analyze`（门牌号字符串）≠ `api/analyze.js`（Vercel 入口文件）**。
+> 门牌号是 Express 应用层的匹配依据；文件是 Vercel 基础设施层的"搬运工"（把请求递给 app）。两层是不同的东西。
+
+### 2.1 一张图看全流程（主链路版）
+
+**衔接的钥匙**：机器内是"对象"，跨机器是"JSON 文本"。HTTP 只能传文本，所以每次跨机器（前端↔后端、后端↔AI）数据都要"变身"两次：压成 JSON 文本发出去，收到再解析回对象。全项目只有 **3 种手段**（就是下面的图例 ①②③）：① HTTP 请求、② HTTP 响应、③ 函数调用 / 跨文件调用。
 
 ```mermaid
 flowchart TD
@@ -159,7 +192,35 @@ flowchart TD
 | ② HTTP 响应 | AI→后端、后端→前端（res.json） | JSON 文本 → 对象 |
 | ③ 函数调用 / 跨文件调用 | 后端内部（app.js 喊 scorer.mjs / stats-store.js） | 对象直接传 |
 
-**读图顺序**：从左上角 A 出发，顺着箭头走到 K——每条边要么是 ①/②（跨机器，数据变身），要么是 ③（机器内，直接传对象）。虚线是"验货失败→退回重写"的循环，最多 3 次。想确认自己读懂了，合上文档默画这张图。
+**读图顺序**：从左上角 A 出发，顺着箭头走到 K。**一句话**：对象 → 文本 → 对象 →（算）→ 对象 → 文本 → 对象 → 屏幕。虚线是"验货失败→退回重写"的循环，最多 3 次。想确认自己读懂了，合上文档默画这张图。
+
+**真实数据案例（docs/test-input.json，线上实跑一次）**：选项账本算出 `gap=0.4 → zone=tie → derived_type=ENTP`（选项信号不足，代码"没把握"）；AI 读完理由（Ti 味很重：q12 一条条核对逻辑、q16 坚持原则不妥协、q18 给最合理方案）后，最终判 **INTP**——**"平手区理由定主辅"在生产环境的真实运行**：账本给默认值，AI 拿理由做最终裁决。
+
+### 2.2 17 步详细对照表（查漏用）
+
+> 这张表和 2.1 主图一一对应：第 1~6 步在前端（A 附近），第 7 步是"敲门"（A→B），第 8~13 步在后端（C→I），第 14~17 步回到前端（J→K）。查漏时：先在图里找节点，再看表里的细节。
+
+| 步 | 发生了什么 | 落点 |
+|---|---|---|
+| 1 | 用户点"开始测试"，舞台从封面切到答题页 | `App.vue`：`phase = 'answering'` |
+| 2 | 20 道题依次渲染（题目长什么样、几个选项、占位文案，全来自数据文件） | `App.vue` 的 `v-for` + `data/questions.json` → `QuestionItem.vue` |
+| 3 | 用户点选 + 写理由，答案实时存进容器对象 | `App.vue`：`answers = { q1: {choice, reason}, ... }` |
+| 4 | 点"生成我的报告" → 两道前端检查：20 题都选了？核心题（q1/q2）理由填了？ | `App.vue`：`handleSubmit()` |
+| 5 | 检查通过 → 画面切"分析中"：小猫踱步/眨眼 + 假进度条（渐近爬升压 94%）+ 4 句文案每 4 秒轮播 | `App.vue`：`phase = 'analyzing'` + `analyzingLines` + `analyzeProgress` |
+| 6 | 答案被打包成 AI 认识的格式：题号 + 题干 + 选项字母 + 选项全文 + 理由 | `App.vue`：`buildPayload()`（格式对照 `docs/prompt.md` 第 2 章） |
+| 7 | `fetch('/api/analyze')` 发出 | 线上：`vercel.json` 把 /api 指给 `api/analyze.js`；本地开发：`vite.config.js` 代理转交 3001 |
+| 8 | 后端两道防线：① 答案是不是数组 ② key 在不在 | `app.js` 的 `/api/analyze`：400 / 500 |
+| 9 | 打电话给 DeepSeek：system = prompt.md 全文（后端启动时就读好了），user = 答案 JSON + 选项账本（scorer.mjs 现算） | `app.js`：`callDeepSeek()`（deepseek-chat、temperature 随理由填写率 0.3~0.9、要求只吐 JSON、120 秒超时） |
+| 10 | DeepSeek 交卷 → 后端"验货"：字段齐不齐、评分在不在 0~100、数组长度对不对 | `app.js`：`validateReport()`（对照 prompt.md 第 4 章合同） |
+| 11 | 不合格？把 AI 上次的输出连同"差评"一起发回去，让它重写；最多 3 次 | `app.js`：`for (let attempt = 0; attempt < 3; ...)` |
+| 12 | 3 次都不合格 → 502"AI 连续 3 次输出不符合格式要求"；AI 服务端出问题 → 状态码翻译成人话（401 key 无效 / 402 余额不足 / 429 太频繁） | `app.js`：`hints` 表 |
+| 13 | 合格 → 顺手记账：总次数 +1、该类型 +1、理由填写数累加、明细推一张票（记账失败绝不拦报告） | `app.js` → `stats-store.js`：`recordTest()` / `recordFeedback()` |
+| 14 | 报告返回前端 → 存一份进浏览器本地（回看用）→ 作废旧报告的"已反馈"戳 → 切报告页 | `App.vue`：`localStorage['last-report']`、`removeItem('feedback-done')`、`phase = 'result'` |
+| 15 | 报告页渲染：类型徽章 → 总分 → 金句 → 描述 → 四功能 → 压力篇 → 配对 → 免责 | `ReportView.vue` |
+| 16 | 用户点"满意/不满意" → 记一个数字进账本；localStorage 盖戳，一份报告一生只能点一次 | `ReportView.vue`：`sendFeedback()` → `app.js` 的 `/api/feedback` |
+| 17 | 任何一步断了 → 失败页：人话错误 + 重试 + 返回修改（答案全保留） | `App.vue`：`catch` → `phase = 'error'` |
+
+**这条流水线的形状**：前端只负责"收数"和"展数"，中间所有"AI 的事"都在后端完成。AI 应用的请求都是这个形状——收数据 → 调 AI → 验货 → 记账 → 展示。
 
 ---
 
@@ -247,7 +308,7 @@ flowchart TD
 
 ### 3.7 账本与仓库管理员（stats-store.js）
 
-**是什么**：统计账本的"仓库管理员"，对外暴露五个函数：`readStats()` / `readEvents()` / `recordTest()` / `recordFeedback()` / `resetStats()`。其他代码（app.js）不关心账本存在哪。
+**是什么**：统计账本的"仓库管理员"，对外暴露六个函数：`readStats()` / `readEvents()` / `recordTest()` / `recordFeedback()` / `recordSuggestion()` / `resetStats()`。其他代码（app.js）不关心账本存在哪。
 
 **账本长什么样**：聚合数字 + 明细票据。每笔测试/反馈都往流水里推一张"票"（不含任何原文），统计页实时流水显示最近 50 张：
 
