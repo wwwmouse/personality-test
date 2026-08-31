@@ -1,5 +1,5 @@
 // stats-store.js —— 统计账本的"仓库管理员"
-// 对外只暴露 readStats / recordTest / recordFeedback / resetStats 四个函数，
+// 对外只暴露 readStats / readEvents / recordTest / recordFeedback / recordSuggestion / resetStats 六个函数，
 // 其他代码不关心账本存在哪。两个仓库二选一（怎么选看 storageMode）：
 //   1. 云端 Upstash Redis：serverless 函数"睡一觉就失忆"，本地文件靠不住，必须用云端仓库。
 //      Redis 的 INCR 是"原子加一"——两个人同时记账也是排队执行，绝不互相覆盖
