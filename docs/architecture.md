@@ -148,8 +148,24 @@ Express 收到请求
 - **门 4**：口令校验（`STATS_KEY` 没配 → 503，`?key=` 不对 → 403）→ `readStats()` + `readEvents(50)` → `res.json({...统计, fillRate, events})`
 - **门 5**：直接 `res.json({status:'ok'})` —— 就这一句，什么都不查
 
-> ⚠️ 最容易混的一点：**`/api/analyze`（门牌号字符串）≠ `api/analyze.js`（Vercel 入口文件）**。
-> 门牌号是 Express 应用层的匹配依据；文件是 Vercel 基础设施层的"搬运工"（把请求递给 app）。两层是不同的东西。
+> ⚠️ **门牌号 ≠ 文件：双层路由（本项目最容易混的一点，一次讲透）**
+>
+> 项目里有两个"analyze"，它们各管一层，别混：
+>
+> | | 是什么 | 属于哪层 | 谁匹配它 |
+> |---|---|---|---|
+> | `/api/analyze`（门牌号） | Express 登记本里的 URL | 应用层 | Express 按它找处理函数 |
+> | `api/analyze.js`（文件） | Vercel 的函数入口 | 基础设施层 | Vercel 按 rewrite 规则唤醒它 |
+>
+> **为什么名字相同？** 巧合（历史遗留）：最初项目只有一个 analyze 接口，文件就叫 analyze.js；后来加了 feedback/suggest/stats，全部塞进同一个文件，没改名。
+>
+> **文件其实是"所有 /api/\* 的房子入口"**：vercel.json 的 `"/api/(.*)" → "/api/analyze"` 让**任何 /api/xxx 请求都唤醒这个文件**，文件再把请求递给 app.js（Express），由 Express 按 URL 分发到具体处理函数。所以它不只是 analyze 的入口。
+>
+> **什么必须匹配？** 只有一处：**浏览器 fetch 的 URL 必须等于 app.post 登记的 URL**（都是 `/api/analyze` 这个字符串）——这是应用层契约，与文件名无关。
+>
+> **改名实验（证明文件名无所谓）**：
+> - 把 `api/analyze.js` 改名成 `api/house.js`、vercel.json 的 rewrite 指向 `/api/house` → 网站照常（文件只是入口，分发是 Express 干的）；
+> - 把 `app.post('/api/analyze')` 改成 `app.post('/api/foo')`、前端 fetch 不变 → 404（**这才是"必须匹配"的地方**）。
 
 ### 2.1 一张图看全流程（主链路版）
 
@@ -243,6 +259,18 @@ flowchart TD
 **为什么这么设计**：单页应用（SPA）只有一个 HTML 文件，所有页面切换都是"换幕布"而不是"换房间"，所以必须有一个明确的"现在第几幕"——这就是状态机。这个心智模型可以带到任何前端项目：**先把页面分成几个状态，每个状态一个画面，按钮负责切换**。
 
 另一个小机关：`/stats` 是"门牌"——`isStatsPage` 检查地址栏，是统计页就只演统计页那出戏，其余门牌一律走测试流程（`App.vue` 第 13 行）。
+
+**前端组件速览表**（5 个 .vue 各管一事；"敲的门"对应 2.0 的 5 扇门，两张表互为反向视角）：
+
+| 组件 | 一句话职责 | 关键函数 / 数据 | 敲的门 | 备注 |
+|---|---|---|---|---|
+| `App.vue`（总导演） | 5 幕舞台切换 + 收集答案 + 提交 | `phase` 状态机、`handleSubmit`、`buildPayload`、假进度条 | 门 1（第 137 行 fetch） | 全项目唯一"大总管" |
+| `QuestionItem.vue` | 渲染一道题：题干 + 4 选项 + 理由框 | `props`（question/index/answer） | —（不敲门） | 纯展示，答案直接写进父组件的 answer 对象 |
+| `ReportView.vue` | 报告 JSON → 页面 + 分享/反馈/建议 | 八维字典、`totalScore`、`copyShare`、`saveScreenshot`、`sendFeedback`、`sendSuggestion` | 门 2（141 行）、门 3（173 行） | 前端最复杂组件，兼容旧报告格式 |
+| `StatsView.vue` | 口令门 → 统计展示 + 10 秒自动刷新 | `load()`（silent 模式）、`sortedTypes`、`groupedEvents` | 门 4（55 行） | 只有管理员看得到 |
+| `OrbsBackground.vue` | 背景浮标装饰 | `speed` / `highlight` props | —（不敲门） | 纯视觉，`aria-hidden` |
+
+**三个要点**：① 只有 3 个组件在敲门（App→门 1、ReportView→门 2/3、StatsView→门 4），和 2.0 的表正好互为反向视角；② QuestionItem 和 OrbsBackground 不敲门（一个纯展示、一个纯装饰）——干活的敲门，不干活的安静；③ 确定性内容代码管：ReportView 的八维中文名/颜色是写死的字典，AI 不用拼中文名。
 
 ### 3.2 题目：数据不是代码（questions.json + QuestionItem.vue）
 
@@ -348,6 +376,35 @@ flowchart TD
 **怎么运转**：只计 15 道阳面题，阴影题跳过；每选一个选项，就给该选项标签的功能加上它的权重（I 侧 0.7 / E 侧 0.8）；八维排名取前两名算分差，四舍五入一位后与 0.7 阈值比较定区段（浮点坑已踩过）；四字母公式（2026-08-21 栈约束版）：主导 = 第一名定 E/I，辅助 = 理论合法候选中高分者定 N/S 或 T/F，P/J 由栈自然得出——保证四字母永远包含第一名功能。
 
 **为什么这么设计**：四测证明 AI"整体裁决"在镜面档案上是掷硬币（E 3/8 天花板四轮纹丝不动）；判型是纯算术，交给代码零犯规、可验算，两层诊断一眼分辨"规则错还是执行错"。AI 的判型职责收缩为三件事：平手区读理由定主辅、分歧时提次可能、写报告。
+
+### 3.10 基础设施名词速查：Vercel / KV / Blob / 环境变量
+
+> 这些词不属于"代码"，属于"部署与存储"（云基础设施）。本项目只需**概念级**理解：知道谁是房东、仓库在哪、钥匙怎么配。计网管"网络怎么通"（HTTP/DNS/端口），这一节管"东西放哪、谁管、配置怎么传"。
+
+**三者关系（房东 + 两个仓库）**：
+
+| 名词 | 是什么 | 在本项目干什么 |
+|---|---|---|
+| **Vercel** | 云平台（房东） | 静态托管前端 + 跑 serverless 函数（api/analyze.js）+ 提供 Storage 仓库 + 管环境变量 |
+| **KV** | 键值数据库（Vercel 对 Upstash Redis 的品牌名） | 存统计账本（原子计数 + 流水票） |
+| **Blob** | 文件存储（像网盘 / S3） | 曾经存过账本，读改写三步会丢数据，2026-08-18 弃用 |
+
+**为什么账本必须放云端（KV）**：serverless 函数"来请求才启动、干完销毁"（睡一觉就失忆），本地文件不可靠 → 状态必须存在函数外面。
+
+**为什么用 KV 不用 Blob**：Blob 是"整个文件换新"（读-改-写三步，两人撞车丢一笔）；KV 是"单键原子操作"（INCR 一步完成，排队执行）。账本需要频繁 +1 → 选 KV。
+
+**环境变量 / process.env（配钥匙的通道）**：
+- `.env` = 本地配置文件（server/.env），启动参数 `--env-file-if-exists` 把它读进进程内存；
+- `process.env` = 当前 Node 进程内存里的"环境变量表"，代码用 `process.env.键名` 取值；
+- 线上没有 .env 文件：Vercel 后台配置（或 KV 集成自动注入的 `KV_REST_API_URL` / `KV_REST_API_TOKEN`）直接进 process.env；
+- **代码永远只读 process.env；.env 只是"本地往 process.env 灌数据"的一种方式。**
+
+**storageMode() 四种分支**（stats-store.js 第 54 行，决定账本存哪）：
+
+1. `STATS_MODE === 'local'` → 锁本地（本地开发常驻开关；**线上绝不能设**，否则函数失忆丢账）
+2. 有 KV 地址 + token（`KV_REST_API_*` 或 `UPSTASH_REDIS_REST_*` 两套都认）→ 云端 Redis
+3. 在 Vercel 却没配 KV → **报错**（宁可报错，不悄悄写"睡一觉就丢"的文件）
+4. 其他 → 本地票据目录 `.stats-events/`
 
 ---
 
