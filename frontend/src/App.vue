@@ -4,21 +4,12 @@ import questions from './data/questions.json'
 import QuestionItem from './components/QuestionItem.vue'
 import ReportView from './components/ReportView.vue'
 import StatsView from './components/StatsView.vue'
-import OrbsBackground from './components/OrbsBackground.vue'
 
 // 当前阶段：cover = 封面；answering = 答题中；analyzing = 分析中；result = 展示报告
 const phase = ref('cover')
 
 // 统计页捷径：访问 /stats 时走统计页，其余路径都走答题流程
 const isStatsPage = window.location.pathname === '/stats'
-
-// 全局背景浮标速度：封面慢速漂浮；进入答题/分析/报告后加速
-const orbSpeed = computed(() => (phase.value === 'cover' ? 'slow' : 'fast'))
-
-// 结果页高亮：只有报告判定的阳面四功能闪烁，其余浮标安静（表现"你的四大功能"）
-const orbHighlight = computed(() =>
-  phase.value === 'result' && report.value ? report.value.functions.map((f) => f.function) : null
-)
 
 // 分析中的等待文案轮播：每 4 秒换一句，让 10~20 秒的等待不无聊。
 // 魔法盒子原则：只写用户体验，不泄露内部流程（不出现"调 API"之类）
@@ -171,8 +162,6 @@ function handleRestart() {
 
 <template>
   <div class="page">
-    <!-- 全局背景：八维浮标（封面慢速全闪，答题/报告加速全闪，结果页只闪阳面四功能） -->
-    <OrbsBackground :speed="orbSpeed" :highlight="orbHighlight" />
     <header v-if="phase !== 'cover'" class="site-header">
       <h1>不止于MBTI</h1>
     </header>
@@ -207,8 +196,10 @@ function handleRestart() {
             <li>如果再难相遇，祝您早安，午安，晚安^^</li>
           </ol>
           <p class="cover-meta">20 道情景题 · 约 6 分钟</p>
-          <button class="cover-start" @click="phase = 'answering'">开始测试</button>
-          <button v-if="hasSavedReport" class="restart-btn cover-replay" @click="viewSavedReport">查看上次报告</button>
+          <div class="cover-actions">
+            <button class="cover-start" @click="phase = 'answering'">开始测试</button>
+            <button v-if="hasSavedReport" class="restart-btn cover-replay" @click="viewSavedReport">查看上次报告</button>
+          </div>
         </div>
       </div>
     </main>
@@ -228,7 +219,7 @@ function handleRestart() {
         :index="i + 1"
         :answer="answers[q.id]"
       />
-      <button class="submit-btn" @click="handleSubmit">生成我的报告 ✨</button>
+      <button class="submit-btn" @click="handleSubmit">生成我的报告</button>
     </main>
 
     <!-- 分析阶段：10~20 秒的等待。小猫踱步/眨眼 + 假进度条 + 轮播文案 + 跳动的小点 -->
@@ -249,11 +240,11 @@ function handleRestart() {
     <!-- 失败阶段：如实告诉用户发生了什么，并给出路 -->
     <main v-else-if="phase === 'error'" class="container">
       <div class="error-box">
-        <p class="error-title">😵 分析没成功</p>
+        <p class="error-title">分析没成功</p>
         <p class="error-msg">{{ errorMessage }}</p>
         <p class="error-hint">你的 20 题答案都还留着——重试，或返回改答案。</p>
         <div class="error-actions">
-          <button class="submit-btn" @click="handleSubmit">🔄 重试一次</button>
+          <button class="submit-btn" @click="handleSubmit">重试一次</button>
           <button class="restart-btn" @click="phase = 'answering'">返回修改答案</button>
         </div>
       </div>
@@ -267,113 +258,3 @@ function handleRestart() {
   </div>
 </template>
 
-<style scoped>
-.analyzing {
-  text-align: center;
-  padding: 60px 20px 80px;
-  font-size: 1.2rem;
-  color: #666;
-}
-
-/* 小猫舞台：emoji 左右踱步，影子跟着伸缩，像猫在台子上走 */
-.cat-stage {
-  width: 88px;
-  margin: 0 auto 22px;
-}
-
-.cat-emoji {
-  display: block;
-  font-size: 3.2rem;
-  line-height: 1;
-  animation: cat-walk 2.6s ease-in-out infinite;
-}
-
-.cat-shadow {
-  display: block;
-  width: 38px;
-  height: 6px;
-  margin: 8px auto 0;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.3);
-  animation: cat-shadow 2.6s ease-in-out infinite;
-}
-
-@keyframes cat-walk {
-  0%,
-  100% {
-    transform: translateX(-14px);
-  }
-  50% {
-    transform: translateX(14px);
-  }
-}
-
-@keyframes cat-shadow {
-  0%,
-  100% {
-    transform: scaleX(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: scaleX(0.55);
-    opacity: 0.2;
-  }
-}
-
-/* 假进度条：渐近爬升的填充 + 蓝青渐变，与八维品牌色一致 */
-.analyze-progress {
-  width: min(320px, 70vw);
-  height: 6px;
-  margin: 0 auto 18px;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.2);
-  overflow: hidden;
-}
-
-.analyze-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #38bdf8, #4ecdc4);
-  transition: width 0.3s ease;
-}
-@keyframes pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-.error-box {
-  max-width: 520px;
-  margin: 60px auto;
-  padding: 32px;
-  text-align: center;
-  border: 1px solid #f0d4d4;
-  border-radius: 12px;
-  background: #fff7f7;
-}
-.error-title {
-  margin: 0 0 12px;
-  font-size: 1.3rem;
-  font-weight: 600;
-}
-.error-msg {
-  margin: 0 0 8px;
-  color: #c0392b;
-  word-break: break-all;
-}
-.error-hint {
-  margin: 0 0 20px;
-  color: #888;
-  font-size: 0.95rem;
-}
-.error-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-</style>

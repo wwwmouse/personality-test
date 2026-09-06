@@ -9,3 +9,5 @@ dist/
 # .stats-local.json 是旧 Blob 时代的遗留，.stats-events/ 是现在的本地票据目录
 .stats-local.json
 .stats-events/
+docs/design-skill
+design-previews/

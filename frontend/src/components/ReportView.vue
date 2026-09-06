@@ -19,23 +19,24 @@ const FUNCTION_CN = {
   Ne: '外倾直觉',
 }
 
-// 八维 → 品牌色（与背景浮标同源）。glow 是 rgba 前缀，拼上透明度用
+// 八维 → 功能色（与背景浮标同源；按暖纸底色调深一档，保证白底可读）
+// soft 是 rgba 前缀，用作淡色底/细边
 const FUNCTION_COLORS = {
-  Ti: { hex: '#74C0FC', glow: 'rgba(116,192,252,' },
-  Te: { hex: '#1A535C', glow: 'rgba(26,83,92,' },
-  Fi: { hex: '#E63946', glow: 'rgba(230,57,70,' },
-  Fe: { hex: '#FFC0B6', glow: 'rgba(255,192,182,' },
-  Si: { hex: '#BB9457', glow: 'rgba(187,148,87,' },
-  Se: { hex: '#FF9F1C', glow: 'rgba(255,159,28,' },
-  Ni: { hex: '#6A4C93', glow: 'rgba(106,76,147,' },
-  Ne: { hex: '#4ECDC4', glow: 'rgba(78,205,196,' },
+  Ti: { hex: '#2f6ea3', soft: 'rgba(47,110,163,' },
+  Te: { hex: '#1a535c', soft: 'rgba(26,83,92,' },
+  Fi: { hex: '#c23b44', soft: 'rgba(194,59,68,' },
+  Fe: { hex: '#b85a75', soft: 'rgba(184,90,117,' },
+  Si: { hex: '#9c7a33', soft: 'rgba(156,122,51,' },
+  Se: { hex: '#c96a1b', soft: 'rgba(201,106,27,' },
+  Ni: { hex: '#6a4c93', soft: 'rgba(106,76,147,' },
+  Ne: { hex: '#1f8f80', soft: 'rgba(31,143,128,' },
 }
 
-// 四个位置的"光"亮度：英雄最强 → 阿尼玛/阿尼姆斯最弱（表现重要程度递减）
+// 四个位置的"浓度"：英雄最强 → 阿尼玛/阿尼姆斯最弱（表现重要程度递减）
 const GLOW_STRENGTH = [0.9, 0.6, 0.38, 0.18]
 
 function fnColor(fn) {
-  return FUNCTION_COLORS[fn] || { hex: '#38bdf8', glow: 'rgba(56,189,248,' }
+  return FUNCTION_COLORS[fn] || { hex: '#c5542c', soft: 'rgba(197,84,44,' }
 }
 
 // 整体人格强度 = 阳面四维评分的算术平均数
@@ -53,9 +54,9 @@ const matches = computed(() =>
 const pressure = computed(() => {
   const p = props.report.under_pressure || []
   return [
-    { label: '🎯 压力按钮', text: p[0] || '' },
-    { label: '🔥 高压之下', text: p[1] || '' },
-    { label: '🌊 风暴过后', text: p[2] || '' },
+    { label: '压力按钮', text: p[0] || '' },
+    { label: '高压之下', text: p[1] || '' },
+    { label: '风暴过后', text: p[2] || '' },
   ].filter((x) => x.text)
 })
 
@@ -117,7 +118,7 @@ async function saveScreenshot() {
     document.documentElement.classList.add('screenshot-mode')
     await nextTick()
     const canvas = await html2canvas(reportEl.value, {
-      backgroundColor: '#0b0b12',
+      backgroundColor: '#f4ecd9',
       scale: 2,
     })
     const link = document.createElement('a')
@@ -192,10 +193,22 @@ async function sendSuggestion() {
 
 <template>
   <div class="report" ref="reportEl">
-    <!-- 1. 四字母 + 别称 -->
+    <!-- 1. 四字母 + 别称 + 阳面四功能徽章（英雄→阿尼玛 浓度递减） -->
     <div class="type-badge">
       <span class="type-letters">{{ report.personality_type }}</span>
       <span class="type-name">· {{ report.type_name }}</span>
+      <div class="hero-badges" aria-label="你的四大认知功能">
+        <span
+          v-for="(f, i) in report.functions"
+          :key="f.function"
+          class="hero-badge"
+          :class="'hero-rank-' + i"
+          :title="f.position + ' · ' + f.score"
+        >
+          <span class="hero-dot" :style="{ background: fnColor(f.function).hex }"></span>
+          {{ f.function }}
+        </span>
+      </div>
     </div>
 
     <!-- 1.5 整体人格强度：阳面四维的平均分 -->
@@ -221,12 +234,13 @@ async function sendSuggestion() {
         v-for="(f, i) in report.functions"
         :key="f.position"
         :style="{
-          borderColor: fnColor(f.function).hex + '66',
-          boxShadow: `0 0 ${8 + GLOW_STRENGTH[i] * 22}px ${fnColor(f.function).glow}${GLOW_STRENGTH[i]})`,
+          borderColor: fnColor(f.function).hex + '40',
+          background: fnColor(f.function).soft + (0.04 + GLOW_STRENGTH[i] * 0.05) + ')',
         }"
       >
         <div class="function-head">
-          <span class="f-name" :style="{ color: fnColor(f.function).hex }">{{ f.function }}：{{ FUNCTION_CN[f.function] || '未知功能' }}</span>
+          <span class="f-dot" :style="{ background: fnColor(f.function).hex }"></span>
+          <span class="f-name">{{ f.function }}：{{ FUNCTION_CN[f.function] || '未知功能' }}</span>
           <span class="f-score" :style="{ color: fnColor(f.function).hex }">{{ f.score }}</span>
         </div>
         <span class="f-position">{{ f.position }}</span>
@@ -257,7 +271,7 @@ async function sendSuggestion() {
             <span class="match-type">{{ m.type }}</span>
           </div>
           <p class="match-text">{{ m.reason }}</p>
-          <p class="match-scene">🎬 {{ m.scene }}</p>
+          <p class="match-scene">{{ m.scene }}</p>
         </div>
       </template>
       <p v-else>{{ report.type_matches }}</p>
@@ -270,8 +284,20 @@ async function sendSuggestion() {
     <section class="share-box">
       <p class="share-title">把报告分享给朋友</p>
       <div class="share-btns">
-        <button class="share-btn" @click="copyShare">📋 复制分享文案</button>
-        <button class="share-btn" :disabled="saving" @click="saveScreenshot">📸 保存报告截图</button>
+        <button class="share-btn" @click="copyShare">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="9" y="9" width="12" height="12" rx="2"></rect>
+            <path d="M5 15V5a2 2 0 0 1 2-2h10"></path>
+          </svg>
+          复制分享文案
+        </button>
+        <button class="share-btn" :disabled="saving" @click="saveScreenshot">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+            <circle cx="12" cy="13" r="4"></circle>
+          </svg>
+          保存报告截图
+        </button>
       </div>
       <p v-if="shareTip" class="share-tip">{{ shareTip }}</p>
     </section>

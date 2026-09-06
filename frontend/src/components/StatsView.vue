@@ -78,7 +78,7 @@ onUnmounted(() => clearInterval(autoTimer))
 
 <template>
   <div class="stats-card">
-    <h2 class="stats-title">📊 站点统计</h2>
+    <h2 class="stats-title">站点统计</h2>
 
     <!-- 口令门：没拿到数据前，只露一个输入框 -->
     <div v-if="!stats" class="stats-gate">
@@ -98,7 +98,13 @@ onUnmounted(() => clearInterval(autoTimer))
     <!-- 数据区 -->
     <template v-else>
       <div class="stats-toolbar">
-        <button class="refresh-btn" :disabled="loading" @click="load(false)">⟳ 立即刷新</button>
+        <button class="refresh-btn" :disabled="loading" @click="load(false)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          立即刷新
+        </button>
         <span class="stats-updated">数据更新于 {{ updatedAt || '—' }}</span>
       </div>
 
@@ -139,7 +145,7 @@ onUnmounted(() => clearInterval(autoTimer))
                 <span class="event-tag event-test">测试</span>
                 <span class="event-detail">{{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}</span>
               </template>
-              <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '👍 满意' : '👎 不满意' }}</span>
+              <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '满意' : '不满意' }}</span>
             </div>
             <div v-if="row.suggest" class="event-suggest-row">
               <span class="event-tag event-suggest">建议</span>
@@ -155,118 +161,3 @@ onUnmounted(() => clearInterval(autoTimer))
   </div>
 </template>
 
-<style scoped>
-.stats-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.refresh-btn {
-  background: transparent;
-  color: #38bdf8;
-  border: 1px solid #38bdf8;
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.refresh-btn:hover {
-  background: rgba(56, 189, 248, 0.12);
-}
-
-.refresh-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.stats-updated {
-  color: #94a3b8;
-  font-size: 0.8rem;
-}
-
-.events-count {
-  color: #94a3b8;
-  font-size: 0.75rem;
-  font-weight: normal;
-}
-
-.events-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.event-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-  font-size: 0.9rem;
-}
-
-/* 三合一块：边框移到块上，主行不再自带下划线；建议文字独占一行 */
-.event-block {
-  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-}
-
-.event-block .event-row {
-  border-bottom: none;
-  padding-bottom: 4px;
-}
-
-.event-suggest-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 0 0 8px;
-  font-size: 0.9rem;
-}
-
-.event-suggest-text {
-  flex: 1;
-  margin: 0;
-  color: #cbd5e1;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  word-break: break-all;
-}
-
-.event-time {
-  color: #94a3b8;
-  font-family: monospace;
-}
-
-.event-tag {
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 0.75rem;
-  flex-shrink: 0;
-}
-
-.event-test {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-}
-
-.event-feedback {
-  background: rgba(255, 159, 28, 0.15);
-  color: #ff9f1c;
-}
-
-.event-suggest {
-  background: rgba(78, 205, 196, 0.15);
-  color: #4ecdc4;
-}
-
-.event-detail {
-  color: #cbd5e1;
-}
-</style>
