@@ -187,18 +187,18 @@ function handleRestart() {
               阴影功能是隐藏在压力与成长中的终生课题。
             </p>
             <p class="cover-intro">
-              通过 20 道情境题，本测验会尝试还原测试者的功能排序，并反馈：习惯怎样思考、为什么会被某些场景触动、压力来临时本能地做什么。它不是给人贴标签，而是一面镜子——照出那些"我说不清为什么，但我就是这样"的部分。认识功能，是为了更好地与自己相处，也更好地理解身边那些与自己不同的人。
+              通过 20 道情境题，这份测试会尝试还原测试者的功能排序，并反馈：习惯怎样思考、为什么会被某些场景触动、压力来临时本能地做什么。它不是给人贴标签，而是一面镜子——照出那些"我说不清为什么，但我就是这样"的部分。认识功能，是为了更好地与自己相处，也更好地理解身边那些与自己不同的人。
             </p>
           </div>
           <ol class="cover-tips">
             <li>每题下方都有理由框：相同的选择、不同的动机，反映的是两个不同的灵魂。</li>
-            <li>本测验旨在为使用者提供认识自己的方式，不附带任何明确建议与判断</li>
+            <li>这份测试旨在为使用者提供认识自己的方式，不附带任何明确建议与判断</li>
             <li>如果再难相遇，祝您早安，午安，晚安^^</li>
           </ol>
           <p class="cover-meta">20 道情景题 · 约 6 分钟</p>
           <div class="cover-actions">
-            <button class="cover-start" @click="phase = 'answering'">开始测试</button>
-            <button v-if="hasSavedReport" class="restart-btn cover-replay" @click="viewSavedReport">查看上次报告</button>
+            <button class="cover-start" @click="phase = 'answering'">开始认识自己</button>
+            <button v-if="hasSavedReport" class="restart-btn cover-replay" @click="viewSavedReport">看看上次的画像</button>
           </div>
         </div>
       </div>
@@ -219,7 +219,7 @@ function handleRestart() {
         :index="i + 1"
         :answer="answers[q.id]"
       />
-      <button class="submit-btn" @click="handleSubmit">生成我的报告</button>
+      <button class="submit-btn" @click="handleSubmit">生成我的画像</button>
     </main>
 
     <!-- 分析阶段：10~20 秒的等待。小猫踱步/眨眼 + 假进度条 + 轮播文案 + 跳动的小点 -->
