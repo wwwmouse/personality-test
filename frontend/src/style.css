@@ -318,6 +318,18 @@ body::after {
   transform: translateY(1px);
 }
 
+/* 答题/报告页里直接挂在 .container（flex column）下的主按钮：
+   不受容器拉伸控制，统一在可用宽度内水平居中（桌面不贴左、手机不贴右） */
+.container > .submit-btn {
+  align-self: center;
+}
+
+/* 错误页的操作组内，重试按钮与返回按钮按组布局，不套上面的居中规则 */
+.error-actions .submit-btn {
+  width: auto;
+  max-width: none;
+}
+
 .restart-btn {
   display: inline-flex;
   align-items: center;
@@ -654,10 +666,74 @@ body::after {
 
 /* 类型区：衬线大字 + 别称，编辑风的"刊头" */
 .type-badge {
+  position: relative;
   text-align: center;
   padding: var(--sp-2) 0 var(--sp-6);
   margin-bottom: var(--sp-6);
   border-bottom: 1px solid var(--line);
+}
+
+/* ---------- 揭晓仪式（盖章揭晓 v2） ----------
+   数据到达后才渲染本区块，动画零额外等待；节奏约 1.5s：
+   1. 整个类型区放大"亮相"（scale 1.24），像把画像举到眼前
+   2. 一枚带 🐱 的章从左上角盖下（快速砸落 + 轻微反震），同时类型区轻顿一下
+   3. 类型区缩回原尺寸，下方内容自然接上
+   prefers-reduced-motion 与 .screenshot-mode 会把动画压到即时，自动跳过 */
+
+.reveal-stamp {
+  animation: stamp-card 1.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center center;
+}
+
+/* 小猫章：圆形纸感章 + 陶土描边 + 斜置，盖在类型区左上边缘（跨出上边线，
+   压着报告卡纸的角，像真章盖在证书角上）。盖完常驻（"喵已认证"印记）；
+   基础可见（截图模式无动画时为正立章），揭晓动画里从隐藏砸落盖下 */
+.type-badge .stamp-seal {
+  position: absolute;
+  top: -18px;
+  left: -8px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  line-height: 1;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--accent-softer), 0 3px 8px rgba(90, 70, 45, 0.2);
+  pointer-events: none;
+  /* 盖下：从斜上方砸落到角位 + 轻微反震 */
+  animation: seal-stamp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both;
+}
+
+@keyframes seal-stamp {
+  0% {
+    opacity: 0;
+    transform: translate(-30px, -26px) rotate(-30deg) scale(1.9);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(3px, 4px) rotate(-9deg) scale(0.94); /* 砸到位略过冲 */
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-1px, -1px) rotate(-8deg) scale(1.04); /* 反震回弹 */
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(-8deg) scale(1); /* 盖稳 */
+  }
+}
+
+@keyframes stamp-card {
+  0% { opacity: 0.001; transform: scale(1.24); }
+  18% { opacity: 1; transform: scale(1.24); }      /* 放大亮相，等待盖章 */
+  42% { opacity: 1; transform: scale(1.22); }      /* 盖章瞬间轻顿 */
+  62% { opacity: 1; transform: scale(1.14); }      /* 开始收回 */
+  100% { opacity: 1; transform: scale(1); }        /* 回原尺寸 */
 }
 
 .type-letters {
@@ -1363,6 +1439,7 @@ body::after {
   *::before,
   *::after {
     animation-duration: 0.001s !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001s !important;
   }

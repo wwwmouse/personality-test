@@ -194,7 +194,9 @@ async function sendSuggestion() {
 <template>
   <div class="report" ref="reportEl">
     <!-- 1. 四字母 + 别称 + 阳面四功能徽章（英雄→阿尼玛 浓度递减） -->
-    <div class="type-badge">
+    <!-- 揭晓仪式：类型卡放大亮相 → 左上角小猫章盖下 → 卡片缩回原尺寸（数据到达后播一次，回看也走） -->
+    <div class="type-badge reveal-stamp">
+      <span class="stamp-seal" aria-hidden="true">🐱</span>
       <span class="type-letters">{{ report.personality_type }}</span>
       <span class="type-name">· {{ report.type_name }}</span>
       <div class="hero-badges" aria-label="你的四大认知功能">
