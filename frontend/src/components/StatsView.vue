@@ -23,12 +23,18 @@ const tieRateText = computed(() => {
   return t && t.rate != null ? t.rate + '%' : '—'
 })
 
-// 一张票的区段标注。margin 可能是 null（2026-08-21 之前的票没有这个字段），返回 null 表示不显示
+// 一张票的区段标注。分差字段 2026-08-21 才加，而它由答案算出、答案从不落盘，
+// 所以老票的区段无法事后补算——标"分区未知"，不留空（留空会被误读成"这张票没有分区"）
 function zoneTagOf(margin) {
-  if (typeof margin !== 'number') return null
-  return margin >= gapThreshold.value
-    ? { cls: 'zone-ledger', label: '账本区' }
-    : { cls: 'zone-tie', label: '平手区' }
+  if (typeof margin !== 'number') {
+    return { cls: 'zone-unknown', label: '分区未知', hasMargin: false }
+  }
+  const ledger = margin >= gapThreshold.value
+  return {
+    cls: ledger ? 'zone-ledger' : 'zone-tie',
+    label: ledger ? '账本区' : '平手区',
+    hasMargin: true,
+  }
 }
 
 // 流水三合一：按会话号把 测试/反馈/建议 三张票合并成一行（老票没有会话号，各自成行）
@@ -175,9 +181,13 @@ onUnmounted(() => clearInterval(autoTimer))
               <template v-if="row.test">
                 <span class="event-tag event-test">测试</span>
                 <span class="event-detail">
-                  {{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}<template v-if="row.testZone"> · 分差 {{ row.test.margin }}</template>
+                  {{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}<template v-if="row.testZone.hasMargin"> · 分差 {{ row.test.margin }}</template>
                 </span>
-                <span v-if="row.testZone" class="event-zone" :class="row.testZone.cls">{{ row.testZone.label }}</span>
+                <span
+                  class="event-zone"
+                  :class="row.testZone.cls"
+                  :title="row.testZone.hasMargin ? '' : '该票早于分差字段（2026-08-21）；分差由答案算出，而答案按隐私红线从不落盘，无法补算'"
+                >{{ row.testZone.label }}</span>
               </template>
               <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '满意' : '不满意' }}</span>
             </div>

@@ -1464,6 +1464,14 @@ body::after {
   color: #0f6f64;
 }
 
+/* 分差字段 2026-08-21 才加；更早的票（含答案未落盘的老票）无法补算，标"未知"而非留空 */
+.zone-unknown {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
 .stat-note-inline {
   font-size: var(--fs-micro);
   color: var(--ink-3);
