@@ -260,7 +260,7 @@ flowchart TD
 
 另一个小机关：`/stats` 是"门牌"——`isStatsPage` 检查地址栏，是统计页就只演统计页那出戏，其余门牌一律走测试流程（`App.vue` 第 13 行）。
 
-**前端组件速览表**（5 个 .vue 各管一事；"敲的门"对应 2.0 的 5 扇门，两张表互为反向视角）：
+**前端组件速览表**（4 个 .vue 各管一事；"敲的门"对应 2.0 的 5 扇门，两张表互为反向视角）：
 
 | 组件 | 一句话职责 | 关键函数 / 数据 | 敲的门 | 备注 |
 |---|---|---|---|---|
@@ -268,9 +268,8 @@ flowchart TD
 | `QuestionItem.vue` | 渲染一道题：题干 + 4 选项 + 理由框 | `props`（question/index/answer） | —（不敲门） | 纯展示，答案直接写进父组件的 answer 对象 |
 | `ReportView.vue` | 报告 JSON → 页面 + 分享/反馈/建议 | 八维字典、`totalScore`、`copyShare`、`saveScreenshot`、`sendFeedback`、`sendSuggestion` | 门 2（141 行）、门 3（173 行） | 前端最复杂组件，兼容旧报告格式 |
 | `StatsView.vue` | 口令门 → 统计展示 + 10 秒自动刷新 | `load()`（silent 模式）、`sortedTypes`、`groupedEvents` | 门 4（55 行） | 只有管理员看得到 |
-| `OrbsBackground.vue` | 背景浮标装饰 | `speed` / `highlight` props | —（不敲门） | 纯视觉，`aria-hidden` |
 
-**三个要点**：① 只有 3 个组件在敲门（App→门 1、ReportView→门 2/3、StatsView→门 4），和 2.0 的表正好互为反向视角；② QuestionItem 和 OrbsBackground 不敲门（一个纯展示、一个纯装饰）——干活的敲门，不干活的安静；③ 确定性内容代码管：ReportView 的八维中文名/颜色是写死的字典，AI 不用拼中文名。
+**三个要点**：① 只有 3 个组件在敲门（App→门 1、ReportView→门 2/3、StatsView→门 4），和 2.0 的表正好互为反向视角；② QuestionItem 不敲门（纯展示）——干活的敲门，不干活的安静；③ 确定性内容代码管：ReportView 的八维中文名/颜色是写死的字典，AI 不用拼中文名。
 
 ### 3.2 题目：数据不是代码（questions.json + QuestionItem.vue）
 

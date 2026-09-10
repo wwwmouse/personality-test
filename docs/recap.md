@@ -114,6 +114,7 @@
 - 反馈按钮："对报告满意吗？满意^^ / 不满意QAQ"
 - 口令统计页 `/stats`（STATS_KEY 鉴权）
 - 视觉大焕新（2026-08-17 深夜）：暗黑霓虹主题、八维浮标背景（封面/答题全屏闪烁，结果页只闪阳面四功能且放大四档常亮）、报告四功能光效与总分条、封面文案定稿（"你，远比四个字母复杂"）、报告分享（复制文案 + 保存截图）、反馈防刷（一份报告一生一次）
+- 暗黑霓虹皮肤与八维浮标背景已在 2026-09-07 换成"暖纸编辑风 v2"（陶土色 + 羊皮纸），`OrbsBackground.vue` 随之删除。
 
 **你学到了**：serverless 心智模型、部署三件套（api 入口/vercel.json/根 package.json）、域名与 DNS（A/CNAME）、云端环境变量、读日志排障（四连杀实战）、构建绿勾 ≠ 运行正常、CSS 变量换肤、确定性内容写死在前端（八维字典/颜色映射）、剪贴板 API 的微信兼容坑（老式 execCommand 兜底）。
 
@@ -137,10 +138,10 @@ personality-test/
 ├── frontend/                    ← 画面（用户看得见的部分）
 │   ├── index.html               唯一门面：og 分享卡 + 大脑 emoji 图标（零图片）
 │   ├── src/App.vue              总导演：封面 → 答题 → 分析中 → 报告/失败 的舞台切换 + /stats 分流
-│   ├── src/components/          QuestionItem.vue（单题）ReportView.vue（报告+反馈按钮+分享截图）StatsView.vue（统计页）OrbsBackground.vue（八维浮标背景）
+│   ├── src/components/          QuestionItem.vue（单题）ReportView.vue（报告+反馈按钮+分享截图）StatsView.vue（统计页）
 │   ├── src/data/questions.json  20 道题 + 选项功能标签与权重（判型计分的数据源，scorer.mjs 直接读；想改题就改这个文件）
 │   ├── src/main.js              挂载入口：把 App.vue 装进页面
-│   ├── src/style.css            全局皮肤（暗黑霓虹主题）
+│   ├── src/style.css            全局皮肤（暖纸编辑风 v2：陶土色强调 + 羊皮纸底 + 8pt 间距网格）
 │   └── vite.config.js           代理中转站：/api → 3001（只在本地开发时用）
 ├── server/                      ← 掌柜（藏 key、调 AI）
 │   ├── app.js                   菜谱：全部路由逻辑，不开店（本地/线上共用）
