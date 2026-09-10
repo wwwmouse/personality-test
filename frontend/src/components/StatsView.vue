@@ -14,6 +14,23 @@ const sortedTypes = computed(() =>
 )
 const maxCount = computed(() => (sortedTypes.value.length ? sortedTypes.value[0][1] : 1))
 
+// 分差阈值由后端下发（源头在 scorer.mjs 的 GAP_THRESHOLD），前端不写死
+const gapThreshold = computed(() => stats.value?.gapThreshold ?? 0.7)
+
+// 平手率展示：没有带分差的票时显示 —（而不是 0%，避免把"没数据"读成"没有平手"）
+const tieRateText = computed(() => {
+  const t = stats.value?.tie
+  return t && t.rate != null ? t.rate + '%' : '—'
+})
+
+// 一张票的区段标注。margin 可能是 null（2026-08-21 之前的票没有这个字段），返回 null 表示不显示
+function zoneTagOf(margin) {
+  if (typeof margin !== 'number') return null
+  return margin >= gapThreshold.value
+    ? { cls: 'zone-ledger', label: '账本区' }
+    : { cls: 'zone-tie', label: '平手区' }
+}
+
 // 流水三合一：按会话号把 测试/反馈/建议 三张票合并成一行（老票没有会话号，各自成行）
 const groupedEvents = computed(() => {
   const rows = []
@@ -22,12 +39,14 @@ const groupedEvents = computed(() => {
     const key = e.session || `${e.type}-${e.ts}`
     let row = index.get(key)
     if (!row) {
-      row = { ts: e.ts, test: null, feedback: null, suggest: null }
+      row = { ts: e.ts, test: null, testZone: null, feedback: null, suggest: null }
       index.set(key, row)
       rows.push(row)
     }
-    if (e.type === 'test') row.test = e
-    else if (e.type === 'feedback') row.feedback = e
+    if (e.type === 'test') {
+      row.test = e
+      row.testZone = zoneTagOf(e.margin)
+    } else if (e.type === 'feedback') row.feedback = e
     else if (e.type === 'suggest') row.suggest = e
     row.ts = Math.max(row.ts, e.ts)
   }
@@ -121,7 +140,19 @@ onUnmounted(() => clearInterval(autoTimer))
           <span class="stat-num">{{ stats.feedback.like }} / {{ stats.feedback.dislike }}</span>
           <span class="stat-label">满意 / 不满意</span>
         </div>
+        <div class="stat-tile">
+          <span class="stat-num">{{ tieRateText }}</span>
+          <span class="stat-label">
+            平手区占比 <span class="stat-note-inline">（近 {{ stats.tie?.n || 0 }} 次判定）</span>
+          </span>
+        </div>
       </div>
+
+      <p class="stats-note stats-tie-note">
+        <b>分差</b>＝选项账本前两名功能的分差。分差 ≥ {{ gapThreshold }} = <b>账本区</b>：选项自己就分得清，判型不看理由；分差 &lt; {{ gapThreshold }} = <b>平手区</b>：改由「理由」裁决。
+        参考基线：随机作答的平手率约 57%——明显低于它，才说明选项真的分出了信号。
+        （分差字段 2026-08-21 起才有，更早的票无此数据；占比只统计最近的票，不足以下结论。）
+      </p>
 
       <div class="stats-section">
         <h3>类型分布</h3>
@@ -143,7 +174,10 @@ onUnmounted(() => clearInterval(autoTimer))
               <span class="event-time">{{ formatTime(row.ts) }}</span>
               <template v-if="row.test">
                 <span class="event-tag event-test">测试</span>
-                <span class="event-detail">{{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}</span>
+                <span class="event-detail">
+                  {{ row.test.personality_type }} · 理由 {{ row.test.reasonFilled }}/{{ row.test.reasonTotal }}<template v-if="row.testZone"> · 分差 {{ row.test.margin }}</template>
+                </span>
+                <span v-if="row.testZone" class="event-zone" :class="row.testZone.cls">{{ row.testZone.label }}</span>
               </template>
               <span v-if="row.feedback" class="event-tag event-feedback">{{ row.feedback.agree ? '满意' : '不满意' }}</span>
             </div>

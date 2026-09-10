@@ -21,7 +21,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import questionsData from '../frontend/src/data/questions.json' with { type: 'json' }
 import { readStats, readEvents, recordTest, recordFeedback, recordSuggestion } from './stats-store.js'
-import { loadQuestions, ledgerSummary, TYPE_STACKS } from './scorer.mjs'
+import { loadQuestions, ledgerSummary, TYPE_STACKS, GAP_THRESHOLD } from './scorer.mjs'
 
 const app = express()
 
@@ -256,9 +256,19 @@ app.get('/api/stats', async (req, res) => {
   try {
     const stats = await readStats()
     const events = await readEvents(50)
+    // 平手率：只统计带 margin 的测试票（分差字段 2026-08-21 才加，更早的票是 null）。
+    // 口径限定在"最近 50 张票"内，不是全量账本——够用来观察趋势，不足以下统计结论
+    const scored = events.filter((e) => e.type === 'test' && typeof e.margin === 'number')
+    const tieCount = scored.filter((e) => e.margin < GAP_THRESHOLD).length
     res.json({
       ...stats,
       fillRate: stats.reasonTotal ? Math.round((stats.reasonFilled / stats.reasonTotal) * 100) : 0,
+      gapThreshold: GAP_THRESHOLD, // 阈值只在 scorer.mjs 定义一次，前端不写死
+      tie: {
+        n: scored.length,
+        count: tieCount,
+        rate: scored.length ? Math.round((tieCount / scored.length) * 100) : null,
+      },
       events, // 明细流水：最近 50 张票，最新在前
     })
   } catch (err) {

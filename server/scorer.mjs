@@ -8,7 +8,9 @@
 // 供 app.js（生产）、type-probe.mjs（回归）、test-analyze.js（试飞）共用。
 
 const FUNCTIONS = ['Ti', 'Fi', 'Ni', 'Si', 'Te', 'Fe', 'Ne', 'Se']
-const GAP_THRESHOLD = 0.7
+// 分差阈值：前两名分差 ≥ 此值 = 账本区（选项说了算），否则 = 平手区（理由定主辅）。
+// 供 app.js 统计平手率复用，避免阈值散落两处
+export const GAP_THRESHOLD = 0.7
 
 // 毕比模型 16 型阳面栈（英雄→阿尼玛）。确定性内容代码管，不交给 AI 记（app.js 验货共用）
 export const TYPE_STACKS = {

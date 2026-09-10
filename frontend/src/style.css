@@ -1356,6 +1356,20 @@ body::after {
   text-align: center;
 }
 
+/* 平手率口径说明：紧跟在统计卡片下方，所以不重复上边距，左对齐便于阅读 */
+.stats-tie-note {
+  margin-top: var(--sp-4);
+  text-align: left;
+  line-height: 1.7;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--paper-2);
+  border-radius: var(--r-md);
+}
+
+.stats-tie-note b {
+  color: var(--ink-2);
+}
+
 /* 实时流水：块状 timeline */
 .events-list {
   list-style: none;
@@ -1429,6 +1443,31 @@ body::after {
 
 .event-detail {
   color: var(--ink-2);
+}
+
+/* 区段标注：账本区=选项自己就分得清（弱化）；平手区=需要理由介入（强调） */
+.event-zone {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-full);
+  font-size: var(--fs-micro);
+  font-weight: 700;
+}
+
+.zone-ledger {
+  background: var(--track);
+  color: var(--ink-2);
+}
+
+.zone-tie {
+  background: rgba(20, 135, 123, 0.12);
+  color: #0f6f64;
+}
+
+.stat-note-inline {
+  font-size: var(--fs-micro);
+  color: var(--ink-3);
+  font-weight: 400;
 }
 
 /* ==========================================================================
